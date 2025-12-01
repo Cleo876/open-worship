@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenWorship | The Lightweight, Portable Presentation Tool</title>
+    <!-- Load Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for PREMIUM DARK AESTHETIC with more POP */
+        :root {
+            --dark-bg-deep: #050E1F; /* Almost black, very dark blue */
+            --dark-panel-subtle: #0F1C36; /* Slightly lighter for panels */
+            --primary-accent-blue: #00C4FF; /* Electric Blue/Cyan */
+            --secondary-accent-purple: #8A2BE2; /* Neon Purple */
+            --text-light: #E0E7FF; /* Off-white for readability */
+            --text-muted: #94A3B8; /* Muted gray for secondary text */
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background-color: var(--dark-bg-deep);
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        /* Hero Background with subtle gradient */
+        .hero-gradient-bg {
+            background: linear-gradient(180deg, var(--dark-bg-deep) 0%, #030810 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Navigation & Header */
+        header {
+            background-color: var(--dark-panel-subtle);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+            border-bottom: 1px solid rgba(0, 196, 255, 0.15);
+            /* Navigation Header: REMAINING RELATIVE */
+            position: relative; 
+            z-index: 20; 
+        }
+        
+        /* Card Styling for Depth and Glow */
+        .feature-card {
+            background-color: var(--dark-panel-subtle);
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.6), inset 0 0 8px rgba(255, 255, 255, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid rgba(0, 196, 255, 0.2); /* Subtle accent border */
+        }
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(0, 196, 255, 0.3); /* Enhanced glow */
+            border-color: var(--primary-accent-blue);
+        }
+
+        /* Problem Card Styling */
+        .problem-card {
+            background-color: #08152c;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(138, 43, 226, 0.2); /* Subtle purple accent border */
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .problem-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6), 0 0 20px rgba(138, 43, 226, 0.2); /* Enhanced glow */
+            border-color: var(--secondary-accent-purple);
+        }
+
+        /* Download Button (Call to Action) */
+        .download-btn {
+            background: linear-gradient(90deg, var(--primary-accent-blue) 0%, var(--secondary-accent-purple) 100%);
+            color: var(--dark-bg-deep); /* Dark text on bright button */
+            font-weight: 800;
+            transition: all 0.4s ease;
+            box-shadow: 0 6px 20px rgba(0, 196, 255, 0.4);
+            border: none;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+        .download-btn:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: all 0.5s ease;
+            z-index: -1;
+        }
+        .download-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 30px rgba(0, 196, 255, 0.6);
+        }
+        .download-btn:hover:before {
+            left: 100%;
+        }
+        
+        /* Typography with Gradient Highlight */
+        .text-gradient-hero {
+            background: linear-gradient(45deg, var(--primary-accent-blue), var(--secondary-accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 5.5rem; /* Larger font size */
+            line-height: 1.1;
+            letter-spacing: -0.05em;
+            text-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+        h2 {
+            font-size: 3.5rem; /* Consistent H2 size */
+            color: var(--text-light);
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+        h3 {
+            color: var(--text-light);
+        }
+        p {
+            color: var(--text-muted);
+        }
+
+        /* Icon Colors */
+        .icon-primary { color: var(--primary-accent-blue); }
+        .icon-secondary { color: var(--secondary-accent-purple); }
+        .icon-red { color: #FF6B6B; } /* For danger/problem icons */
+        .icon-green { color: #50FA7B; } /* For success/stability icons */
+        .icon-yellow { color: #FFDD60; } /* For unique/open icons */
+
+
+        /* --- FULL SCREEN INFO PANEL STYLES --- */
+        #infoPanel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 100%;
+            /* REMOVED MAX-WIDTH TO ALLOW FULL SCREEN EFFECT */
+            height: 100%;
+            background-color: var(--dark-bg-deep);
+            z-index: 50;
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8);
+            transform: translateX(100%);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+            border-left: 3px solid var(--primary-accent-blue);
+        }
+        #infoPanel.active {
+            transform: translateX(0);
+        }
+        .info-header {
+            border-bottom: 1px solid rgba(0, 196, 255, 0.2);
+            padding: 20px 32px;
+            /* FIX: Ensure info panel header scrolls off screen */
+            position: relative; /* Change from sticky to relative */
+            z-index: 10;
+        }
+        .info-close-btn {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .info-close-btn:hover {
+            color: var(--secondary-accent-purple);
+        }
+
+        /* BANNER SPECIFIC STYLES */
+        .hero-banner-image {
+            /* Full width image */
+            width: 100%;
+            /* FIX 2: Restrict image height to the container's shorter padding */
+            height: 100%; 
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 5; /* Below text, above background */
+        }
+        
+        .image-overlay {
+            /* Dark overlay for readability */
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6); /* Semi-transparent black layer */
+            z-index: 8;
+        }
+
+        .hero-text-content {
+            /* Text container */
+            position: relative;
+            z-index: 10;
+            /* FIX 3: Drastically reduced vertical padding to keep content tight and make banner shorter */
+            padding: 5rem 1rem 3rem 1rem; 
+            min-height: 0; /* Ensures height is dictated by content flow */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- Navigation Bar --><header class="shadow-xl relative z-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <h1 class="text-3xl font-extrabold text-white tracking-tight">OpenWorship</h1>
+            <div class="flex items-center space-x-4">
+                 <button onclick="toggleInfoPanel()" class="text-sm font-semibold text-text-muted hover:text-primary-accent-blue transition duration-200">
+                    Why Choose OpenWorship?
+                </button>
+                <a id="nav-download-btn" 
+                   href="https://raw.githubusercontent.com/Cleo876/open-worship/refs/heads/main/Open-Worship.html" 
+                   download="Open-Worship.html"
+                   class="download-btn px-6 py-2 rounded-full text-base">Download <span id="nav-version">v2.3.14</span></a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section (Full-Width Banner with Overlapping Text) --><main>
+        <section class="relative hero-gradient-bg text-center overflow-hidden pt-0 pb-0">
+            
+            <!-- 1. Full-Width Background Image (Z-index 5) --><img src="https://github.com/Cleo876/open-worship/blob/main/Hero-Image.png?raw=true" 
+                 class="hero-banner-image" 
+                 alt="OpenWorship application running on a laptop with vibrant, futuristic interface banner">
+            
+            <!-- 2. Dark Overlay for Readability (Z-index 8) --><div class="image-overlay"></div>
+
+            <!-- 3. Text Content (Z-index 10) --><div class="max-w-7xl mx-auto px-4 relative z-10 hero-text-content">
+                
+                <div class="text-left md:text-left max-w-xl mx-auto md:mx-0">
+                    <h2 class="text-6xl md:text-7xl font-extrabold mb-6 text-gradient-hero">
+                        WORSHIP<br>WITHOUT<br>THE WAIT.
+                    </h2>
+                    <p class="text-xl md:text-2xl text-text-muted mb-10">
+                        The ultra-lightweight, 100% portable presentation tool built for efficiency and speed. 
+                        <br class="hidden sm:block">No Installation. No Licenses. Just Worship.
+                    </p>
+                    <a id="hero-download-btn" 
+                       href="https://raw.githubusercontent.com/Cleo876/open-worship/refs/heads/main/Open-Worship.html" 
+                       download="Open-Worship.html"
+                       class="download-btn inline-flex items-center justify-center px-12 py-5 rounded-full text-xl font-extrabold shadow-2xl">
+                        <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        GET OPENWORSHIP <span id="hero-version">v2.3.14</span>
+                    </a>
+                    <p class="mt-6 text-sm text-gray-400">Current Version: <span id="hero-version-small">v2.3.14</span> | Runs on any modern web browser (Chrome, Edge, Firefox)</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Problem Solved Section (Higher Contrast) --><section class="py-24 bg-dark-panel-subtle">
+            <div class="max-w-7xl mx-auto px-4 lg:px-8">
+                <h2 class="text-center mb-16 font-extrabold text-4xl">THE PROBLEMS WE ELIMINATE</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    
+                    <!-- Problem 1: Lag --><div class="problem-card p-8 h-full transition hover:shadow-lg">
+                        <svg class="w-14 h-14 mb-4 icon-red" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        <h3 class="text-2xl font-semibold mb-3">High Resource Demand</h3>
+                        <p>Traditional software often crashes older laptops due to heavy video rendering. OpenWorship's Canvas Engine is dramatically lighter, preserving your hardware's performance.</p>
+                    </div>
+                    
+                    <!-- Problem 2: Cost --><div class="problem-card p-8 h-full transition hover:shadow-lg">
+                        <svg class="w-14 h-14 mb-4 icon-red" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c1.657 0 3 .895 3 2s-1.343 2-3 2h-1v-2h1c-.167 0-1-.157-1-1s.833-1 1-1zM7 21a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v14a2 2 0 01-2 2H7z"></path></svg>
+                        <h3 class="text-2xl font-semibold mb-3">Expensive Licenses</h3>
+                        <p>Avoid hundreds of dollars in licensing fees. OpenWorship is fully free and open source, making professional presentation technology accessible to every church, regardless of budget.</p>
+                    </div>
+
+                    <!-- Problem 3: Setup --><div class="problem-card p-8 h-full transition hover:shadow-lg">
+                        <svg class="w-14 h-14 mb-4 icon-red" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                        <h3 class="text-2xl font-semibold mb-3">Setup Nightmares</h3>
+                        <p>Zero installation required. Run OpenWorship instantly from a USB drive or cloud link on Windows, Mac, or Linux—ultimate flexibility for your volunteer teams.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Features Section (Accent Color Border) --><section class="py-24 bg-dark-bg-deep">
+            <div class="max-w-7xl mx-auto px-4 lg:px-8">
+                <h2 class="text-center mb-16 font-extrabold text-4xl">KEY ADVANTAGES</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    
+                    <!-- Feature 1: Canvas Rendering --><div class="feature-card p-8">
+                        <span class="text-sm font-bold text-gray-500 mb-2 block">01 / PERFORMANCE</span>
+                        <h3 class="text-2xl font-semibold mb-4">Lightweight Canvas Engine</h3>
+                        <p>HTML5 Canvas rendering means <b>smooth, non-lagging transitions</b> and less mid-service crashes on any hardware, bypassing heavy video drivers.</p>
+                    </div>
+
+                    <!-- Feature 2: Portability --><div class="feature-card p-8">
+                        <span class="text-sm font-bold text-gray-500 mb-2 block">02 / PORTABILITY</span>
+                        <h3 class="text-2xl font-semibold mb-4">True Single-File Application</h3>
+                        <p>The entire app in one <b>.html</b> file. Unparalleled portability—run it from a USB stick, cloud drive, or desktop with no setup.</p>
+                    </div>
+
+                    <!-- Feature 3: Offline --><div class="feature-card p-8">
+                        <span class="text-sm font-bold text-gray-500 mb-2 block">03 / STABILITY</span>
+                        <h3 class="text-2xl font-semibold mb-4">Guaranteed Offline Capability</h3>
+                        <p>No CDNs, no broken links. All assets are bundled, ensuring 100% functionality offline. Media and schedules are Base64 embedded for reliability.</p>
+                    </div>
+                    
+                    <!-- Feature 4: Open Design --><div class="feature-card p-8">
+                        <span class="text-sm font-bold text-gray-500 mb-2 block">04 / ECOSYSTEM</span>
+                        <h3 class="text-2xl font-semibold mb-4">Public Domain Content & Tools</h3>
+                        <p>Tools to fetch and save massive libraries of public domain Bibles and Hymns. Manage lyrics legally without CCLI subscription barriers.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Call to Action --><section class="py-24 bg-dark-panel-subtle text-center">
+             <a id="footer-download-btn" 
+                href="https://raw.githubusercontent.com/Cleo876/open-worship/refs/heads/main/Open-Worship.html" 
+                download="Open-Worship.html"
+                class="download-btn inline-flex items-center justify-center px-16 py-6 rounded-full text-2xl font-extrabold">
+                <svg class="w-8 h-8 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                DOWNLOAD OPENWORSHIP <span id="footer-version">v2.3.14</span> NOW
+            </a>
+            <!-- User-Focused Instructions --><p class="mt-8 text-lg font-semibold text-text-muted max-w-2xl mx-auto">
+                You are downloading the complete <b>OpenWorship</b> application (<span id="footer-version-small">v2.3.14</span>). 
+                <br>
+                It is a single, serverless .html file. No installation or setup is required.
+            </p>
+            
+        </section>
+    </main>
+
+    <!-- Footer --><footer class="bg-dark-bg-deep py-12 border-t border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 text-center text-gray-700 text-sm">
+            &copy; 2024 OpenWorship Project. Built using pure HTML5 and JavaScript. | <b>Open Source Spirit.</b>
+        </div>
+    </footer>
+
+    <!-- --- FULL SCREEN INFO PANEL --- --><div id="infoPanel" class="fixed top-0 right-0 w-full h-full z-50 overflow-y-auto transform translate-x-full transition-transform duration-400 ease-in-out bg-dark-bg-deep border-l-4 border-primary-accent-blue">
+        
+        <!-- Header --><div class="info-header flex justify-between items-center bg-dark-panel-subtle relative z-10">
+            <h2 class="text-3xl font-extrabold text-white">Understanding OpenWorship</h2>
+            <button onclick="toggleInfoPanel()" class="info-close-btn p-2 rounded-full hover:bg-gray-800">
+                &times;
+            </button>
+        </div>
+
+        <!-- Content Container --><div class="max-w-6xl mx-auto p-8 lg:p-12 space-y-12">
+            
+            <!-- Section 1: The Philosophy (Why the Name?) --><section class="border-b border-gray-800 pb-8">
+                <h3 class="text-4xl font-bold text-primary-accent-blue mb-4">The Name: OpenWorship</h3>
+                <div class="flex items-start space-x-6">
+                    <svg class="w-12 h-12 text-secondary-accent-purple flex-shrink-0 mt-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h1.01M17 12H7"></path></svg>
+                    <div>
+                        <h4 class="text-2xl font-semibold text-text-light mb-3">Our Core Belief: Access Over Income</h4>
+                        <p class="text-text-muted mb-4">
+                            <b>"Open Worship"</b> was chosen to reflect the <b>Open Source</b> and <b>Open Web</b> nature of the tool. Unlike expensive, proprietary software, this tool is "Open" for anyone to use, inspect, and modify, and it runs on the "Open" web platform (HTML5/Canvas) without requiring installation. It democratizes professional worship presentation technology.
+                        </p>
+                        <ul class="list-disc list-inside text-text-muted space-y-2 ml-4">
+                            <li><b>Open Source Spirit:</b> The source code (HTML/CSS/JS) is fully visible, editable, and free for anyone to inspect, modify, or improve.</li>
+                            <li><b>Open Content:</b> We focus exclusively on integrating public domain content (Bibles and Hymns) to keep the barrier to entry non-existent.</li>
+                            <li><b>Open Platform:</b> It runs on the most open platform available—the browser—freeing you from operating system restrictions (Mac vs. Windows).</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 2: The .HTML Advantage (Why NOT a normal App?) --><section class="border-b border-gray-800 pb-8">
+                <h3 class="text-4xl font-bold text-primary-accent-blue mb-4">The .HTML Advantage: Efficiency, Not Limitation</h3>
+                <p class="text-text-muted mb-6">
+                    Most people see a single <b>.html</b> file and assume it's basic. For OpenWorship, this technical choice is its greatest strength, delivering <b>superior performance</b> for ministry use cases.
+                </p>
+                <div class="space-y-6">
+                    
+                    <div class="flex items-start space-x-4 p-4 rounded-lg bg-dark-panel-subtle border-l-4 border-green-500">
+                        <svg class="w-10 h-10 text-green-500 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.015a11.971 11.971 0 013.22 1.621m-4.088-2.677a10.999 10.999 0 0110.15 10.15m-14.14 0a10.999 10.999 0 01-10.15-10.15m14.14 0a10.999 10.999 0 0110.15 10.15"></path></svg>
+                        <div>
+                            <h4 class="text-xl font-semibold text-text-light">Unmatched Portability & Zero Install</h4>
+                            <p class="text-text-muted text-sm">A single file is the ultimate portable solution. Plug in a USB, click the file, and you're ready. No installers, no compatibility checks, no admin passwords needed. <b>This saves 15 minutes every Sunday.</b></p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start space-x-4 p-4 rounded-lg bg-dark-panel-subtle border-l-4 border-primary-accent-blue">
+                        <svg class="w-10 h-10 text-primary-accent-blue flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        <div>
+                            <h4 class="text-xl font-semibold text-text-light">Superior Performance for Text</h4>
+                            <p class="text-text-muted text-sm">We use HTML5 Canvas, which is hardware-accelerated for 2D rendering. Unlike feature-heavy software that strains the GPU, OpenWorship provides lightning-fast, smooth fades and transitions for text and static media, ideal for older ministry machines.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start space-x-4 p-4 rounded-lg bg-dark-panel-subtle border-l-4 border-yellow-500">
+                        <svg class="w-10 h-10 text-yellow-500 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a3 3 0 003-3v-5m-15 0h15m-15 0V6a3 3 0 013-3h4l2 2h4a3 3 0 013 3v2m-2-4h-2m-1-4V4m0 0h.01"></path></path></svg>
+                        <div>
+                            <h4 class="text-xl font-semibold text-text-light">Unbreakable Offline Stability</h4>
+                            <p class="text-text-muted text-sm">Media (like background images) and schedules are saved using Base64 encoding *inside* the <b>.schedule</b> file. This means your media is bundled, and links never break, <b>guaranteeing the presentation works perfectly</b> even when your venue's Wi-Fi fails.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Footer Call to Action --><div class="py-6 text-center">
+                 <a id="panel-download-btn" 
+                    href="https://raw.githubusercontent.com/Cleo876/open-worship/refs/heads/main/Open-Worship.html" 
+                    download="Open-Worship.html"
+                    class="download-btn inline-flex items-center justify-center px-12 py-4 rounded-full text-lg font-extrabold">
+                    <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    DOWNLOAD THE APP
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GITHUB_RAW_URL = "https://raw.githubusercontent.com/Cleo876/open-worship/refs/heads/main/Open-Worship.html";
+        const DOWNLOAD_FILENAME = "Open-Worship.html";
+
+        /**
+         * Fetches the OpenWorship application file and extracts the version number.
+         * Then updates all version display elements and download links on the page.
+         */
+        async function fetchAndDisplayVersion() {
+            let version = "v2.3.14 (N/A)"; // Default if fetch fails
+
+            try {
+                const response = await fetch(GITHUB_RAW_URL);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch file: ${response.statusText}`);
+                }
+                const content = await response.text();
+                
+                // Regex to find vX.X.X, vX.X.XX, etc. 
+                const match = content.match(/v\d+\.\d+\.\d+/);
+                if (match) {
+                    version = match[0];
+                } else {
+                     version = "v2.3.14 (Unmatched)"; // Fallback if regex fails
+                }
+            } catch (error) {
+                console.error("Error fetching version from GitHub:", error);
+                // Keep the default or show a specific error version
+            }
+            
+            // --- Update All Elements ---
+            
+            const elements = [
+                { id: 'nav-version', prefix: 'v', suffix: '' },
+                { id: 'hero-version', prefix: 'v', suffix: '' },
+                { id: 'hero-version-small', prefix: 'v', suffix: '' },
+                { id: 'footer-version', prefix: '', suffix: '' },
+                { id: 'footer-version-small', prefix: '', suffix: '' }
+            ];
+
+            elements.forEach(item => {
+                const el = document.getElementById(item.id);
+                if (el) {
+                    const cleanVersion = version.startsWith('v') ? version.substring(1) : version;
+                    el.textContent = `${item.prefix}${cleanVersion}${item.suffix}`;
+                }
+            });
+            
+            // Update download buttons href and download attribute
+            const buttons = document.querySelectorAll('a[id$="-download-btn"]');
+            buttons.forEach(btn => {
+                btn.href = GITHUB_RAW_URL;
+                btn.setAttribute('download', DOWNLOAD_FILENAME);
+            });
+            
+            const panelBtn = document.getElementById('panel-download-btn');
+            if (panelBtn) {
+                panelBtn.href = GITHUB_RAW_URL;
+                panelBtn.setAttribute('download', DOWNLOAD_FILENAME);
+            }
+        }
+
+        function toggleInfoPanel() {
+            const panel = document.getElementById('infoPanel');
+            if (panel) {
+                panel.classList.toggle('active');
+                document.body.classList.toggle('overflow-hidden');
+            } else {
+                 console.error("Error: Could not find the infoPanel element.");
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchAndDisplayVersion();
+        });
+    </script>
+</body>
+</html>
