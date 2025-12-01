@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenWorship v2.3.14</title>
+    
+    <!-- REMINDER: Use 3-digit semantic versioning (Major.Minor.Patch) for this project. Current: v2.3.14 -->
+    
+    <!-- PRE-LOAD FONTS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&family=Oswald:wght@400;700&family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* CORE VARIABLES */
+        :root {
+            --bg-dark: #121212;
+            --bg-panel: #1e1e1e;
+            --bg-header: #2d2d2d;
+            --accent: #007acc;
+            --text-main: #e0e0e0;
+            --border: #333;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Segoe UI', sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- UI COMPONENTS --- */
+        .menu-bar {
+            height: 28px; background: #1a1a1a; display: flex; align-items: center; 
+            padding: 0 12px; font-size: 0.8rem; border-bottom: 1px solid #333; gap: 5px; user-select: none;
+        }
+        .menu-item { padding: 4px 10px; cursor: default; color: #bbb; position: relative; border-radius: 4px; }
+        .menu-item:hover, .menu-item.active { background: #333; color: white; }
+        .dropdown { display: none; position: absolute; top: 100%; left: 0; background: #2a2a2a; border: 1px solid #444; min-width: 200px; z-index: 500; box-shadow: 0 4px 10px rgba(0,0,0,0.5); padding: 4px 0; border-radius: 4px; }
+        .menu-item.active .dropdown { display: block; }
+        .dropdown div { padding: 6px 20px; color: #ddd; }
+        .dropdown div:hover { background: var(--accent); }
+        .separator { height:1px; background:#444; margin:4px 0; }
+
+        /* HEADER */
+        header {
+            min-height: 50px; height: auto;
+            background: var(--bg-header); border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; padding: 5px 16px; justify-content: space-between; gap: 20px;
+            flex-wrap: wrap; 
+        }
+        .brand { font-weight: bold; font-size: 1.1rem; color: #f0f0f0; display:flex; align-items:center; gap:10px; white-space: nowrap; flex-shrink: 0; }
+        .brand-badge { font-size: 0.65em; background: #151515; padding: 3px 10px; border-radius: 25px; border: 1px solid #333; }
+        
+        .controls { 
+            display: flex; gap: 10px; align-items: center; 
+            flex-wrap: wrap; justify-content: flex-end; flex: 1;
+        }
+
+        button {
+            background: linear-gradient(to bottom, #3a3a3a, #2b2b2b); border: 1px solid #444; color: #f0f0f0;
+            padding: 0 16px; border-radius: 6px; cursor: pointer; height: 28px; font-weight:600; font-size:0.8rem;
+            white-space: nowrap;
+        }
+        button:hover { background: #444; border-color: #666; }
+        button.live-btn { background: linear-gradient(to bottom, #d32f2f, #b71c1c); border-color: #b71c1c; }
+        button.live-btn:hover { background: #f44336; }
+        button.active-state { background: var(--accent); border-color: #005f9e; }
+
+        /* --- LAYOUT --- */
+        .app-body { display: flex; flex-direction: column; flex: 1; height: calc(100vh - 78px); }
+        .top-section { display: flex; flex: 1; min-height: 0; }
+        
+        .panel { display:flex; flex-direction:column; }
+        .panel-left { width: 250px; background: var(--bg-panel); border-right: 1px solid var(--border); resize: horizontal; overflow:auto; }
+        .panel-center { flex: 1; background: #111; padding: 20px; overflow-y: auto; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 15px; justify-content: center; }
+        .panel-right { width: 300px; background: black; border-left: 1px solid var(--border); padding: 15px; align-items: center; }
+        
+        .panel-header { padding: 8px 12px; background: linear-gradient(to right, #252525, #222); font-size: 0.75rem; font-weight: bold; color: #888; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        /* SCHEDULE & LIBRARY */
+        .schedule-container { flex: 1; overflow-y: auto; min-height: 50px; }
+        .schedule-container.drag-over { background: rgba(0, 122, 204, 0.1); }
+        
+        .schedule-item { padding: 10px 12px; border-bottom: 1px solid #2a2a2a; cursor: default; display: flex; font-size: 0.9rem; }
+        .schedule-item:hover { background: #333; }
+        .schedule-item.selected { background: var(--accent); color: white; border-left: 3px solid #66b2ff; }
+        .schedule-item.dragging { opacity: 0.5; background: #444; border: 1px dashed #666; }
+
+        .bottom-section { height: 300px; background: var(--bg-panel); border-top: 1px solid var(--border); display: flex; flex-direction: column; }
+        .library-tabs { display: flex; background: #252525; border-bottom: 1px solid var(--border); align-items: center; }
+        .tab { padding: 8px 20px; cursor: pointer; color: #888; border-right: 1px solid #333; }
+        .tab.active { background: var(--bg-panel); color: var(--accent); font-weight: bold; border-bottom: 2px solid var(--accent); }
+        
+        .library-content { flex: 1; display: flex; position: relative; } 
+        .library-list { flex: 1; overflow-y: auto; border-right: 1px solid var(--border); }
+        
+        /* FLOATING ADD BUTTON */
+        .fab-add {
+            position: absolute; bottom: 20px; right: 420px;
+            width: 40px; height: 40px; border-radius: 50%; border: none;
+            background: var(--accent); color: white; font-size: 24px; font-weight: bold;
+            display: none; align-items: center; justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); cursor: pointer; z-index: 100;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .fab-add:hover { transform: scale(1.1); background: #005f9e; }
+
+        .preview-pane-wrapper { width: 400px; display: flex; flex-direction: column; border-left: 1px solid #222; background: #1a1a1a; }
+        
+        /* LIBRARY PREVIEW CONTAINERS */
+        .library-preview-container {
+            flex: 1;
+            background: #181818;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow: hidden;
+            position: relative; /* Container for absolute children */
+        }
+        
+        /* CANVAS (Visual Preview) */
+        canvas.library-preview-canvas {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: black;
+            border: 1px solid #333;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        
+        /* TEXT AREA (Scripture Preview) */
+        #libraryPreviewText {
+            position: absolute; /* Overlay canvas area */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            background: #181818;
+            color: #ddd;
+            font-family: monospace;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            overflow-y: auto;
+            white-space: pre-wrap; /* Preserve formatting */
+            display: none; /* Hidden by default */
+        }
+        
+        /* PREVIEW CARDS */
+        .slide-wrapper { transition: transform 0.1s; cursor: pointer; }
+        .slide-wrapper:hover { transform: scale(1.03); }
+        .slide-wrapper.active canvas { border-color: #d32f2f; box-shadow: 0 0 20px rgba(211,47,47,0.6); }
+        canvas.preview-canvas { background: black; border: 2px solid #333; border-radius: 4px; width: 200px; aspect-ratio: 16/9; object-fit: contain; }
+        canvas.live-monitor { 
+            width: 100%; aspect-ratio: 16/9; border: 2px solid #444; background: black; border-radius: 4px;
+            transition: opacity 0.3s ease; /* FADE TRANSITION */
+        }
+        canvas.live-monitor.fading { opacity: 0; }
+
+        /* --- MODALS --- */
+        .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
+        .editor-window { width: 90vw; height: 90vh; background: #222; border: 1px solid #444; display: flex; flex-direction: column; border-radius: 8px; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+        .editor-header { padding: 10px 15px; background: #333; border-bottom: 1px solid #444; display: flex; justify-content: space-between; align-items: center; }
+        .editor-body { display: flex; flex: 1; overflow: hidden; }
+        .editor-sidebar { width: 200px; background: #1a1a1a; border-right: 1px solid #444; overflow-y: auto; display: flex; flex-direction: column; }
+        .slide-thumb { padding: 10px; border-bottom: 1px solid #333; cursor: pointer; opacity: 0.7; display:flex; gap:10px; align-items:center; }
+        .slide-thumb:hover { opacity: 1; background: #252525; }
+        .slide-thumb.active { opacity: 1; background: var(--accent); color: white; }
+        .thumb-num { font-weight: bold; font-size: 1.2rem; opacity: 0.5; }
+        .editor-main { flex: 1; display: flex; flex-direction: column; background: #151515; }
+        .editor-preview-area { flex: 1; display: flex; align-items: center; justify-content: center; background: #111; padding: 20px; overflow: hidden; position: relative; }
+        .editor-canvas { width: 70%; aspect-ratio: 16/9; background: black; border: 1px solid #555; box-shadow: 0 0 20px rgba(0,0,0,0.5); cursor: default; }
+        .editor-toolbar { padding: 8px; background: #252525; border-top: 1px solid #444; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .tool-group { display: flex; gap: 5px; border-right: 1px solid #444; padding-right: 10px; align-items: center; }
+        .tool-input { background: #111; border: 1px solid #444; color: white; padding: 4px; border-radius: 4px; }
+        .tool-btn { width: 30px; padding: 0; }
+        .tool-label { font-size: 0.7rem; color: #888; margin-right: 5px; }
+        .editor-text-input { height: 120px; background: #222; padding: 0 10px 10px 10px; display: flex; flex-direction: column; }
+        .editor-textarea { flex: 1; background: #111; border: 1px solid #333; color: white; resize: none; padding: 10px; font-family: inherit; outline: none; }
+        .editor-textarea:focus { border-color: var(--accent); }
+
+        /* FONT MANAGER MODAL */
+        .font-modal-content { width: 400px; background: #222; border: 1px solid #444; padding: 20px; border-radius: 8px; }
+        .font-input-group { margin-bottom: 15px; }
+        .font-input-group label { display: block; color: #888; margin-bottom: 5px; font-size: 0.9rem; }
+        .font-input-group input { width: 100%; padding: 8px; background: #111; border: 1px solid #444; color: white; border-radius: 4px; }
+        /* STATUS TEXT */
+        #fontStatus { height: 20px; margin-bottom: 10px; font-size: 0.9rem; font-weight: bold; }
+        /* INSTALLED FONT LIST */
+        .font-list-container {
+            max-height: 150px; overflow-y: auto; background: #111; border: 1px solid #444; border-radius: 4px; margin-bottom: 15px;
+        }
+        .font-list-item {
+            padding: 8px 10px; border-bottom: 1px solid #2a2a2a; color: #eee; font-size: 1.1rem; cursor: default;
+        }
+        .font-list-item:last-child { border-bottom: none; }
+
+        /* RANGE ITEM */
+        .range-item { background: #0d2b3e; border-left: 3px solid #007acc; color: #fff; font-weight: bold; }
+        .range-item:hover { background: #163d55; }
+
+        /* TOAST NOTIFICATION */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            margin-left: -125px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 4px;
+            padding: 16px;
+            position: fixed;
+            z-index: 2000;
+            left: 50%;
+            bottom: 30px;
+            font-size: 17px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border: 1px solid #555;
+        }
+        #toast.show {
+            visibility: visible;
+            -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+        @-webkit-keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @-webkit-keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+
+    </style>
+</head>
+<body>
+
+    <!-- MENU BAR -->
+    <div class="menu-bar" id="menuBar">
+        <div class="menu-item" data-menu="file">File
+            <div class="dropdown">
+                <div onclick="document.getElementById('logoInput').click()">Upload Logo...</div>
+                <div class="separator"></div>
+                <div onclick="downloadBibleFromWeb()">Fetch Bible (Web)</div>
+                <div onclick="downloadHymnsFromWeb()">Fetch Hymns (Web)</div>
+                <div onclick="document.getElementById('contentInput').click()">Load Content (Disk)</div>
+                <div class="separator"></div>
+                <div onclick="saveSchedule()">Save Schedule...</div>
+                <div onclick="document.getElementById('scheduleInput').click()">Open Schedule...</div>
+                <div class="separator"></div>
+                <div onclick="location.reload()">Exit</div>
+            </div>
+        </div>
+        <div class="menu-item">Edit <div class="dropdown"><div>Undo</div><div>Redo</div></div></div>
+        <div class="menu-item">Fonts
+            <div class="dropdown">
+                <div onclick="openFontManager()">Manage Fonts...</div>
+            </div>
+        </div>
+        <div class="menu-item">Window <div class="dropdown"><div onclick="openProjector()">Open Projector</div></div></div>
+        <div style="margin-left:auto; color:#666; font-weight:bold;">v2.3.14</div>
+    </div>
+
+    <!-- HEADER -->
+    <header>
+        <div class="brand">OpenWorship <span class="brand-badge">CANVAS ENGINE</span></div>
+        <div class="controls">
+            <button id="btnBlack" onclick="toggleBlack()">Black</button>
+            <button id="btnClear" onclick="toggleClear()">Clear</button>
+            <button id="btnLogo" onclick="toggleLogo()">Logo</button>
+            <div style="width:1px; height:20px; background:#444;"></div>
+            <button class="live-btn" onclick="openProjector()">GO LIVE</button>
+        </div>
+    </header>
+
+    <!-- MAIN BODY -->
+    <div class="app-body">
+        <div class="top-section">
+            <div class="panel panel-left">
+                <div class="panel-header">SCHEDULE</div>
+                <!-- DROP ZONE SCHEDULE -->
+                <div class="schedule-container" id="scheduleList" 
+                     ondragover="allowDrop(event)" 
+                     ondrop="dropOnSchedule(event)">
+                </div>
+            </div>
+            <div class="panel panel-center" id="slideGrid">
+                <div style="color:#444; margin-top:50px;">Select an item to preview</div>
+            </div>
+            <div class="panel panel-right">
+                <div class="panel-header" style="background:none;">LIVE OUTPUT</div>
+                <canvas id="monitorCanvas" class="live-monitor" width="1920" height="1080"></canvas>
+                <div style="margin-top:5px; color:#666; font-size:0.8rem;">Status: <span id="projStatus">OFFLINE</span></div>
+            </div>
+        </div>
+        <div class="bottom-section">
+            <div class="library-tabs">
+                <div class="tab active" onclick="switchTab('Song')">Songs</div>
+                <div class="tab" onclick="switchTab('Scripture')">Scriptures</div>
+                <div class="tab" onclick="switchTab('Presentation')">Presentations</div>
+                <div style="flex:1;"></div>
+                <input type="text" id="librarySearch" placeholder="Search Library..." style="background:#111; border:1px solid #333; color:white; padding:5px 12px; width:250px; outline:none; border-radius:15px; margin-right:10px;" oninput="handleSearch()">
+            </div>
+            <div class="library-content">
+                <!-- DROP ZONE LIBRARY -->
+                <div style="flex:1; overflow-y:auto; border-right:1px solid #333;" id="libraryList"
+                     ondragover="allowDrop(event)" 
+                     ondrop="dropOnLibrary(event)">
+                </div>
+                
+                <!-- FLOATING ADD BUTTON (Visible on Presentation Tab) -->
+                <button class="fab-add" id="addPresBtn" onclick="createNewPresentation()" title="Create New Presentation">+</button>
+
+                <div class="preview-pane-wrapper">
+                    <div class="panel-header">PREVIEW</div>
+                    <!-- PREVIEW CONTAINER: CONDITIONAL CONTENT -->
+                    <div class="library-preview-container">
+                        <!-- 1. CANVAS FOR VISUAL PREVIEW (Songs/Presentations) -->
+                        <canvas id="libraryPreviewCanvas" class="library-preview-canvas" width="1920" height="1080"></canvas>
+                        
+                        <!-- 2. TEXT DIV FOR RAW TEXT PREVIEW (Scriptures) -->
+                        <div id="libraryPreviewText" style="display: none;">Select an item to preview text...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DATALIST FOR BIBLE BOOKS -->
+    <datalist id="bibleBooks">
+        <option value="Genesis"><option value="Exodus"><option value="Leviticus"><option value="Numbers"><option value="Deuteronomy">
+        <option value="Joshua"><option value="Judges"><option value="Ruth"><option value="1 Samuel"><option value="2 Samuel">
+        <option value="1 Kings"><option value="2 Kings"><option value="1 Chronicles"><option value="2 Chronicles"><option value="Ezra">
+        <option value="Nehemiah"><option value="Esther"><option value="Job"><option value="Psalms"><option value="Proverbs">
+        <option value="Ecclesiastes"><option value="Song of Solomon"><option value="Isaiah"><option value="Jeremiah"><option value="Lamentations">
+        <option value="Ezekiel"><option value="Daniel"><option value="Hosea"><option value="Joel"><option value="Amos">
+        <option value="Obadiah"><option value="Jonah"><option value="Micah"><option value="Nahum"><option value="Habakkuk">
+        <option value="Zephaniah"><option value="Haggai"><option value="Zechariah"><option value="Malachi">
+        <option value="Matthew"><option value="Mark"><option value="Luke"><option value="John"><option value="Acts">
+        <option value="Romans"><option value="1 Corinthians"><option value="2 Corinthians"><option value="Galatians"><option value="Ephesians">
+        <option value="Philippians"><option value="Colossians"><option value="1 Thessalonians"><option value="2 Thessalonians"><option value="1 Timothy">
+        <option value="2 Timothy"><option value="Titus"><option value="Philemon"><option value="Hebrews"><option value="James">
+        <option value="1 Peter"><option value="2 Peter"><option value="1 John"><option value="2 John"><option value="3 John">
+        <option value="Jude"><option value="Revelation">
+    </datalist>
+
+    <!-- TOAST -->
+    <div id="toast">Notification</div>
+
+    <!-- MODALS & HIDDEN -->
+    <div class="modal-overlay" id="editorModal">
+        <div class="editor-window">
+            <div class="editor-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <input type="text" id="editItemTitle" style="padding: 5px; background: #111; color: white; border: 1px solid #444; border-radius: 4px; font-size: 1.1rem; width: 400px; margin-right: 20px;" placeholder="Presentation Title">
+                <div><button onclick="closeEditor()">Cancel</button><button class="live-btn" onclick="saveEditorChanges()">Save Changes</button></div>
+            </div>
+            <div class="editor-body">
+                <div class="editor-sidebar"><div style="padding:10px; background:#222; text-align:center;"><button onclick="addNewSlide()" style="width:100%; font-size:0.8rem;">+ Add Slide</button></div><div id="editorSlideList"></div></div>
+                <div class="editor-main">
+                    <div class="editor-preview-area"><canvas id="editorCanvas" class="editor-canvas" width="1920" height="1080"></canvas></div>
+                    <div class="editor-toolbar">
+                        <div class="tool-group"><span class="tool-label">Element:</span><button onclick="addTextBlock()">+ Text Block</button></div>
+                        <div class="tool-group"><span class="tool-label">Font</span><select id="toolFont" class="tool-input" onchange="updateCurrentBlockStyle()"></select><input type="number" id="toolSize" class="tool-input" style="width:60px;" value="90" onchange="updateCurrentBlockStyle()" list="sizePresets"><datalist id="sizePresets"><option value="40"></option><option value="60"></option><option value="90"></option><option value="120"></option><option value="150"></option><option value="200"></option></datalist></div>
+                        <div class="tool-group"><button class="tool-btn" onclick="toggleStyle('bold')" style="font-weight:bold;">B</button><button class="tool-btn" onclick="toggleStyle('italic')" style="font-style:italic;">I</button><input type="color" id="toolColor" class="tool-input" style="width:40px; height:28px; padding:0;" onchange="updateCurrentBlockStyle()"></div>
+                        <div class="tool-group"><button onclick="document.getElementById('bgUpload').click()">BG Image</button><input type="file" id="bgUpload" style="display:none;" accept="image/*" onchange="uploadSlideBG(this)"><button onclick="clearSlideBG()">No BG</button></div>
+                        <button onclick="removeCurrentBlock()" style="color:#d32f2f; margin-left:auto;">Delete Block</button>
+                    </div>
+                    <div class="editor-text-input"><textarea id="editorTextArea" class="editor-textarea" placeholder="Select a text block to edit..." oninput="updateCurrentBlockText()"></textarea></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="fontManager">
+        <div class="font-modal-content">
+            <h3 style="margin-top:0; color:#eee;">Manage Fonts</h3>
+            <div id="fontStatus"></div>
+            <div class="font-input-group"><label>Add from Google Fonts</label><div style="display:flex; gap:5px;"><input type="text" id="googleFontName" placeholder="Font Name"><button onclick="fetchGoogleFont()">Fetch</button></div><a href="https://fonts.google.com" target="_blank" style="font-size:0.8rem; color:#007acc; text-decoration:none; display:block; margin-top:5px;">Browse Google Fonts</a></div>
+            <div class="separator"></div>
+            <div class="font-input-group"><label>Upload Local Font</label><div style="display:flex; gap:5px;"><button onclick="document.getElementById('localFontInput').click()" style="width:100%;">Select File</button><input type="file" id="localFontInput" accept=".ttf,.otf" style="display:none" onchange="uploadLocalFont(this)"></div></div>
+            <div class="separator"></div>
+            <label style="display:block; color:#888; margin-bottom:5px; font-size:0.9rem;">Installed Fonts</label>
+            <div id="installedFontsList" class="font-list-container"></div>
+            <div style="text-align:right; margin-top:20px;"><button onclick="document.getElementById('fontManager').style.display='none'">Close</button></div>
+        </div>
+    </div>
+
+    <!-- SAVE ALERT MODAL -->
+    <div class="modal-overlay" id="saveAlertModal">
+        <div class="modal">
+            <h3>Content Fetched!</h3>
+            <p id="saveMsg" style="color:#ccc; font-size:0.9rem; line-height:1.5;"></p>
+            <div class="modal-buttons"><button onclick="document.getElementById('saveAlertModal').style.display='none'">Close</button><button class="live-btn" id="btnSaveDisk">Save File</button></div>
+        </div>
+    </div>
+
+    <input type="file" id="logoInput" style="display:none" accept="image/*" onchange="handleLogoUpload(this)">
+    <input type="file" id="contentInput" accept=".json,.bible,.hymn" style="display:none" onchange="handleContentLoad(this)">
+    <input type="file" id="scheduleInput" style="display:none" accept=".schedule,.json" onchange="handleScheduleLoad(this)">
+    
+    <div id="contextMenu" class="dropdown" style="position:absolute;">
+        <div id="ctxEdit">Edit Item</div>
+        <div id="ctxRename">Rename Item</div>
+        <div id="ctxRemove">Remove</div>
+    </div>
+
+    <script>
+        // REMINDER: Use 3-digit semantic versioning (Major.Minor.Patch) for this project (e.g., v2.3.14).
+        // GLOBAL DATA
+        const RESOLUTION = { width: 1920, height: 1080 };
+        
+        let library = [
+            { id: 1, title: "Way Maker", type: "Song", slides: [ {layers:[{text:"You are here\nMoving in our midst", style:{fontSize:90}}]}, {layers:[{text:"Way maker, miracle worker", style:{fontSize:90}}]} ] },
+            { id: 2, title: "10,000 Reasons", type: "Song", slides: [ {layers:[{text:"Bless the Lord O my soul", style:{fontSize:90}}]} ] }
+        ];
+        let bibleLibrary = []; 
+        
+        let schedule = JSON.parse(JSON.stringify(library)); 
+        let currentTab = 'Song';
+        let projectorWindow = null, logoImage = null;
+        let isBlack = false, isClear = false, isLogo = false;
+        let editingItem = null, tempSlides = [], currentSlideIndex = 0, selectedLayerIndex = 0; 
+        let availableFonts = ["Segoe UI", "Arial", "Times New Roman", "Courier New", "Poppins", "Oswald", "Open Sans"];
+        let downloadedBibleData = null;
+
+        // GLOBAL DRAG STATE
+        let dragSource = null; 
+        let dragIndex = -1;
+        let dragItem = null; 
+
+        // GLOBAL NAV STATE
+        let currentGridSlides = [];
+        let currentSlideIdx = -1;
+        let liveState = { slide: null, item: null }; 
+
+        // SCRIPTURE SCROLLING STATE
+        let visibleScriptureCount = 500; // Increased default load for better UX
+
+        // INIT
+        function init() {
+            renderSchedule();
+            switchTab('Song');
+            renderSlide(document.getElementById('monitorCanvas').getContext('2d'), null);
+            renderSlide(document.getElementById('libraryPreviewCanvas').getContext('2d'), {layers:[{text:"Select Item", style:{fontSize:60}}]});
+
+            document.querySelectorAll('.menu-item').forEach(m => {
+                m.addEventListener('click', e => { e.stopPropagation(); document.querySelectorAll('.menu-item').forEach(i => i !== m && i.classList.remove('active')); m.classList.toggle('active'); });
+                m.addEventListener('mouseenter', () => { if(document.querySelector('.menu-item.active')) { document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active')); m.classList.add('active'); }});
+            });
+            document.addEventListener('click', () => { document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active')); document.getElementById('contextMenu').style.display = 'none'; });
+            
+            // Bind Search
+            document.getElementById('librarySearch').setAttribute('list', 'bibleBooks');
+            document.getElementById('libraryList').addEventListener('scroll', handleLibraryScroll);
+
+            setupEditorInteraction();
+            setupKeyboardNav();
+        }
+
+        // --- TOAST NOTIFICATION ---
+        function showToast(message) {
+            const x = document.getElementById("toast");
+            x.innerText = message;
+            x.className = "show";
+            setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
+        }
+
+        // --- CENTRALIZED TRANSITION LOGIC (SYMMETRIC FADE) ---
+        function transitionLiveState(newSlide, newItem, footer) {
+            const monitor = document.getElementById('monitorCanvas');
+            let pCanvas = null;
+            if(projectorWindow && !projectorWindow.closed) {
+                pCanvas = projectorWindow.document.getElementById('projectorCanvas');
+            }
+
+            monitor.classList.add('fading');
+            if(pCanvas) pCanvas.classList.add('fading');
+
+            setTimeout(() => {
+                renderSlide(monitor.getContext('2d'), newSlide, footer);
+                if(pCanvas) {
+                    renderSlide(pCanvas.getContext('2d'), newSlide, footer);
+                    pCanvas.classList.remove('fading');
+                }
+                monitor.classList.remove('fading');
+                
+                liveState.slide = newSlide;
+                liveState.item = newItem;
+            }, 300);
+        }
+
+        // --- GO LIVE ---
+        function goLive(slide, item, el) {
+            document.querySelectorAll('.slide-wrapper').forEach(x => x.classList.remove('active')); 
+            if(el) el.classList.add('active');
+            
+            let footer = "";
+            if (slide && slide.verseReference) {
+                footer = `- ${slide.verseReference} (KJV)`;
+            } else if (item && item.type === 'Scripture') {
+                footer = `- ${item.title} (KJV)`;
+            }
+
+            transitionLiveState(slide, item, footer);
+        }
+
+        // --- TOGGLES (FIXED TO USE TRANSITION) ---
+        function reRenderLive() { 
+            let active = document.querySelector('.slide-wrapper.active'); 
+            if(active) {
+                active.click(); 
+            } else {
+                let footer = "";
+                if (liveState.slide && liveState.slide.verseReference) footer = `- ${liveState.slide.verseReference} (KJV)`;
+                else if (liveState.item && liveState.item.type === 'Scripture') footer = `- ${liveState.item.title} (KJV)`;
+                transitionLiveState(liveState.slide, liveState.item, footer);
+            }
+        }
+
+        function toggleBlack() { isBlack=!isBlack; document.getElementById('btnBlack').classList.toggle('active-state'); reRenderLive(); }
+        function toggleClear() { isClear=!isClear; document.getElementById('btnClear').classList.toggle('active-state'); reRenderLive(); }
+        
+        function toggleLogo() { 
+            isLogo = !isLogo; 
+            document.getElementById('btnLogo').classList.toggle('active-state'); 
+            reRenderLive(); 
+        }
+
+        // --- LOGO UPLOAD ---
+        function handleLogoUpload(input) { 
+            if(input.files[0]) { 
+                let r = new FileReader(); 
+                r.onload = e => { 
+                    logoImage=new Image(); 
+                    logoImage.src=e.target.result; 
+                    showToast("Logo Set Successfully"); 
+                    if(isLogo) reRenderLive(); 
+                }; 
+                r.readAsDataURL(input.files[0]); 
+            }
+        }
+
+        // --- OPEN PROJECTOR ---
+        function openProjector() {
+            if(projectorWindow && !projectorWindow.closed) {
+                projectorWindow.focus();
+            } else {
+                projectorWindow = window.open("", "Projector", "width=800,height=600");
+                projectorWindow.document.write(`
+                    <html>
+                    <head>
+                        <title>LIVE OUTPUT</title>
+                        <style>
+                            body { margin:0; background:black; overflow:hidden; }
+                            canvas { width:100vw; height:100vh; object-fit:contain; display:block; transition: opacity 0.3s ease; }
+                            .fading { opacity: 0; }
+                        </style>
+                    </head>
+                    <body>
+                        <canvas id="projectorCanvas" width="${RESOLUTION.width}" height="${RESOLUTION.height}"></canvas>
+                    </body>
+                    <script>
+                        document.addEventListener('dblclick', () => { 
+                            if(!document.fullscreenElement) document.documentElement.requestFullscreen(); 
+                            else document.exitFullscreen(); 
+                        });
+                        document.addEventListener('click', (e) => e.preventDefault());
+                    <\/script>
+                    </html>
+                `);
+                projectorWindow.onload = () => { 
+                    document.getElementById('projStatus').innerText = "LIVE"; 
+                    document.getElementById('projStatus').style.color = "#4caf50"; 
+                    reRenderLive(); // Sync immediately
+                };
+                
+                const timer = setInterval(() => {
+                    if (projectorWindow.closed) {
+                        clearInterval(timer);
+                        const status = document.getElementById('projStatus');
+                        if(status) { status.innerText = "OFFLINE"; status.style.color = "#d32f2f"; }
+                    }
+                }, 1000);
+            }
+        }
+
+        // --- KEYBOARD NAVIGATION ---
+        function setupKeyboardNav() {
+            document.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+                if (currentGridSlides.length > 0) {
+                    if (e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        if (currentSlideIdx < currentGridSlides.length - 1) {
+                            const wrappers = document.querySelectorAll('#slideGrid .slide-wrapper');
+                            let nextIdx = currentSlideIdx + 1;
+                            if (wrappers[nextIdx]) wrappers[nextIdx].click();
+                        }
+                    } else if (e.key === 'ArrowLeft') {
+                        e.preventDefault();
+                        if (currentSlideIdx > 0) {
+                            const wrappers = document.querySelectorAll('#slideGrid .slide-wrapper');
+                            let prevIdx = currentSlideIdx - 1;
+                            if (wrappers[prevIdx]) wrappers[prevIdx].click();
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- SCROLL LOGIC ---
+        function handleLibraryScroll(e) {
+            if(currentTab !== 'Scripture') return;
+            const el = e.target;
+            if(el.scrollTop + el.clientHeight >= el.scrollHeight - 50) {
+                if (visibleScriptureCount < bibleLibrary.length) {
+                    visibleScriptureCount += 500; 
+                    const query = document.getElementById('librarySearch').value;
+                    renderScriptureList(query, true); 
+                }
+            }
+        }
+
+        // --- SEARCH LOGIC ---
+        function handleSearch() {
+            const query = document.getElementById('librarySearch').value;
+            visibleScriptureCount = 500; 
+            if (currentTab === 'Scripture') {
+                renderScriptureList(query, false);
+            } else {
+                renderLibrary(); 
+            }
+        }
+
+        function renderScriptureList(query, append = false) {
+            let c = document.getElementById('libraryList'); 
+            
+            // Switch Preview Mode
+            document.getElementById('libraryPreviewCanvas').style.display = 'none';
+            document.getElementById('libraryPreviewText').style.display = 'block';
+            document.getElementById('libraryPreviewText').innerText = "Select a verse to view...";
+            
+            if(!append) c.innerHTML="";
+            
+            const rangeRegex = /^([1-3]?\s?[a-zA-Z]+)\s+(\d+):(\d+)-(\d+)$/;
+            const match = query.match(rangeRegex);
+
+            // --- 1. HANDLE RANGE ITEM ---
+            if (match && !append) {
+                const book = match[1];
+                const chapter = parseInt(match[2]);
+                const startV = parseInt(match[3]);
+                const endV = parseInt(match[4]);
+                
+                const verses = bibleLibrary.filter(v => v.title.startsWith(`${book} ${chapter}:`)).filter(v => {
+                    const vNum = parseInt(v.title.split(':')[1]);
+                    return vNum >= startV && vNum <= endV;
+                });
+
+                if (verses.length > 0) {
+                    let compositeItem = {
+                        id: Date.now(),
+                        title: `${book} ${chapter}:${startV}-${endV} (Range)`,
+                        type: 'Scripture',
+                        slides: verses.map(v => {
+                            let s = JSON.parse(JSON.stringify(v.slides[0]));
+                            s.verseReference = v.title; 
+                            return s;
+                        })
+                    };
+
+                    let div = document.createElement('div');
+                    div.className = 'schedule-item range-item';
+                    div.innerHTML = `<span>${compositeItem.title}</span>`;
+                    div.draggable = true;
+                    div.ondragstart = (e) => startDrag(e, 'library', -1, compositeItem);
+                    
+                    div.onclick = () => {
+                         const content = compositeItem.slides.map(s => `${s.verseReference}\n${s.layers[0].text}`).join('\n\n---\n\n');
+                         document.getElementById('libraryPreviewText').innerText = content;
+                    }
+                    div.ondblclick = () => goLive(compositeItem.slides[0], compositeItem); // Double-click to go live
+                    c.appendChild(div);
+                }
+            }
+
+            // --- 2. HANDLE SCROLLABLE LIST ---
+            let count = 0;
+            const lowerQ = query.toLowerCase();
+            let itemsToRender = []; 
+
+            for(let i=0; i<bibleLibrary.length; i++) {
+                const item = bibleLibrary[i];
+                if(item.title.toLowerCase().includes(lowerQ)) {
+                    itemsToRender.push(item);
+                }
+            }
+            
+            let startIndex = append ? c.childElementCount : 0;
+
+            for(let i=startIndex; i<itemsToRender.length; i++) {
+                if (count >= visibleScriptureCount) break;
+
+                const item = itemsToRender[i];
+
+                let d = document.createElement('div'); 
+                d.className='schedule-item'; 
+                d.innerText=item.title; 
+                d.draggable=true;
+                
+                d.onclick = (function(itemToPreview) {
+                    return function() {
+                        const content = `${itemToPreview.title}\n\n${itemToPreview.slides[0].layers[0].text}`;
+                        document.getElementById('libraryPreviewText').innerText = content;
+                    }
+                })(item);
+
+                d.ondblclick = (function(itemToLive) {
+                    return function() {
+                        goLive(itemToLive.slides[0], itemToLive); // Double-click to go live
+                    }
+                })(item);
+
+                d.ondragstart = (e) => startDrag(e, 'library', -1, item); 
+                c.appendChild(d);
+                count++;
+            }
+            
+            if(bibleLibrary.length === 0 && !append) {
+                c.innerHTML = "<div style='padding:20px; color:#777;'>Bible not loaded. Go to File > Fetch Bible.</div>";
+            }
+        }
+
+        // --- DRAG START & DROP LOGIC ---
+        function startDrag(e, origin, index, itemData) {
+            dragSource = origin;
+            dragIndex = index;
+            dragItem = itemData; 
+            e.dataTransfer.effectAllowed = (origin === 'library') ? 'copy' : 'move';
+            e.dataTransfer.setData('text/plain', 'valid-drag'); 
+        }
+
+        function allowDrop(e) { e.preventDefault(); }
+
+        function dropOnSchedule(e, targetIndex) {
+            e.preventDefault(); e.stopPropagation();
+            if(targetIndex === undefined || targetIndex === null) targetIndex = schedule.length;
+
+            if(dragSource === 'library' && dragItem) { 
+                let clone = JSON.parse(JSON.stringify(dragItem)); 
+                clone.id = Date.now(); 
+                schedule.splice(targetIndex, 0, clone); 
+                renderSchedule(); 
+            } else if (dragSource === 'schedule') {
+                if (dragIndex !== -1) {
+                    let m = schedule.splice(dragIndex, 1)[0]; 
+                    schedule.splice(targetIndex, 0, m); 
+                    renderSchedule();
+                }
+            }
+            resetDrag();
+        }
+
+        function dropOnLibrary(e) {
+            e.preventDefault(); e.stopPropagation();
+            if (dragSource === 'schedule') {
+                if (currentTab === 'Song' || currentTab === 'Scripture') { resetDrag(); return; }
+                if (currentTab === 'Presentation' && dragItem) {
+                    let newItem = JSON.parse(JSON.stringify(dragItem));
+                    newItem.id = Date.now();
+                    newItem.type = 'Presentation'; 
+                    library.push(newItem);
+                    renderLibrary();
+                }
+            }
+            resetDrag();
+        }
+
+        function resetDrag() { dragSource = null; dragIndex = -1; dragItem = null; }
+
+        // --- RENDERERS ---
+        function renderSchedule() {
+            let c = document.getElementById('scheduleList'); c.innerHTML = "";
+            schedule.forEach((item, i) => {
+                let div = document.createElement('div'); div.className = 'schedule-item'; div.draggable = true;
+                div.innerHTML = `<strong>${item.title}</strong><span style="margin-left:auto; font-size:0.7em; color:#666;">${item.type}</span>`;
+                div.onclick = () => loadToGrid(item, div);
+                div.oncontextmenu = (e) => showContextMenu(e, 'schedule', i, item); 
+                div.ondragstart = (e) => { startDrag(e, 'schedule', i, item); };
+                div.ondragover = allowDrop;
+                div.ondrop = (e) => dropOnSchedule(e, i); 
+                c.appendChild(div);
+            });
+        }
+
+        function renderLibrary(append = false) {
+            if (currentTab === 'Scripture') { handleSearch(); return; }
+            
+            // Switch Preview Mode
+            document.getElementById('libraryPreviewCanvas').style.display = 'block';
+            document.getElementById('libraryPreviewText').style.display = 'none';
+
+            let c = document.getElementById('libraryList'); 
+            if(!append) c.innerHTML="";
+            
+            document.getElementById('addPresBtn').style.display = (currentTab === 'Presentation') ? 'flex' : 'none';
+
+            const q = document.getElementById('librarySearch').value.toLowerCase();
+            
+            library.filter(x => x.type===currentTab && x.title.toLowerCase().includes(q)).forEach((item, i) => {
+                let d = document.createElement('div'); d.className='schedule-item'; d.innerText=item.title; d.draggable=true;
+                
+                d.onclick = () => {
+                    const ctx = document.getElementById('libraryPreviewCanvas').getContext('2d');
+                    const firstSlide = item.slides[0] || {text:"", layers:[]};
+                    renderSlide(ctx, firstSlide, "Preview");
+                };
+                
+                d.ondblclick = () => goLive(item.slides[0], item); // Double-click to go live
+                d.oncontextmenu = e => showContextMenu(e, 'library', library.indexOf(item), item);
+                d.ondragstart = (e) => startDrag(e, 'library', i, item);
+                c.appendChild(d);
+            });
+        }
+
+        function switchTab(t) { 
+            currentTab=t; 
+            visibleScriptureCount = 500; 
+            document.getElementById('libraryList').scrollTop = 0; 
+            document.getElementById('librarySearch').value = ""; 
+            
+            const searchInput = document.getElementById('librarySearch');
+            if(t === 'Scripture') {
+                searchInput.setAttribute('list', 'bibleBooks');
+                searchInput.placeholder = "Search Scripture (e.g. Gen 1:1)...";
+            } else {
+                searchInput.removeAttribute('list');
+                searchInput.placeholder = "Search Library...";
+            }
+
+            const ctx = document.getElementById('libraryPreviewCanvas').getContext('2d');
+            // Clear preview
+            renderSlide(ctx, {layers:[{text:"Select Item", style:{fontSize:60}}]});
+
+            renderLibrary(); 
+            document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.innerText.includes(t))); 
+        }
+
+        function loadToGrid(item, el) { 
+            currentGridSlides = item.slides;
+            currentSlideIdx = -1; 
+            document.querySelectorAll('.schedule-item').forEach(x => x.classList.remove('selected')); if(el) el.classList.add('selected'); let g = document.getElementById('slideGrid'); g.innerHTML = ""; item.slides.forEach((slide, index) => { let w = document.createElement('div'); w.className = 'slide-wrapper'; let cvs = document.createElement('canvas'); cvs.className = 'preview-canvas'; cvs.width = 1920; cvs.height = 1080; renderSlide(cvs.getContext('2d'), slide); w.onclick = () => { currentSlideIdx = index; goLive(slide, item, w); }; w.appendChild(cvs); g.appendChild(w); }); 
+        }
+        
+        function renderSlide(ctx, slideObj, footer="") { 
+            if (!slideObj) slideObj = { layers:[] }; 
+            if (slideObj.text) { slideObj.layers = [{ text: slideObj.text, style: slideObj.style || {} }]; delete slideObj.text; delete slideObj.style; } 
+            if (!slideObj.layers) slideObj.layers = []; 
+            
+            ctx.fillStyle = 'black'; ctx.fillRect(0, 0, RESOLUTION.width, RESOLUTION.height); 
+            
+            const isPreview = ctx.canvas.id.includes('editor') || ctx.canvas.id.includes('library');
+
+            if (!isPreview) {
+                if (isLogo && logoImage) { let scale = Math.min(RESOLUTION.width/logoImage.width, RESOLUTION.height/logoImage.height); let w = logoImage.width * scale, h = logoImage.height * scale; ctx.drawImage(logoImage, (RESOLUTION.width-w)/2, (RESOLUTION.height-h)/2, w, h); return; }
+                if (isBlack) return;
+            }
+
+            if (slideObj.bgImage && !isClear) { if (!slideObj._bgImgObj || slideObj._bgImgObj.src !== slideObj.bgImage) { slideObj._bgImgObj = new Image(); slideObj._bgImgObj.src = slideObj.bgImage; slideObj._bgImgObj.onload = () => { if(ctx.canvas.id.includes('editor')) renderEditorPreview(); }; } if (slideObj._bgImgObj.complete) { ctx.drawImage(slideObj._bgImgObj, 0, 0, RESOLUTION.width, RESOLUTION.height); } } 
+            
+            if (isClear && !isPreview) return; 
+            
+            slideObj.layers.forEach((layer, idx) => { const style = layer.style || {}; const text = layer.text || ""; if (ctx.canvas.id.includes('editor') && idx === selectedLayerIndex) { ctx.save(); ctx.strokeStyle = '#007acc'; ctx.lineWidth = 2; ctx.restore(); } const fontSize = parseInt(style.fontSize) || 90; const fontFace = style.font || "Segoe UI"; const fontWeight = style.bold ? "bold" : "normal"; const fontStyle = style.italic ? "italic" : "normal"; const color = style.color || "white"; const offX = parseInt(style.x || 0); const offY = parseInt(style.y || 0); ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px "${fontFace}"`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = "round"; ctx.miterLimit = 2; ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 4; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2; const maxWidth = RESOLUTION.width - 200; const words = text.split('\n').join(' [BR] ').split(' '); let lines = [], currentLine = words[0]; for (let i = 1; i < words.length; i++) { if (words[i] === '[BR]') { lines.push(currentLine); currentLine = ""; continue; } let w = ctx.measureText(currentLine + " " + words[i]).width; if (w < maxWidth) currentLine += (currentLine===""?"":" ") + words[i]; else { lines.push(currentLine); currentLine = words[i]; } } lines.push(currentLine); let lineHeight = fontSize * 1.2; let startY = (RESOLUTION.height - (lines.length * lineHeight)) / 2 + (lineHeight/2); let centerX = (RESOLUTION.width/2) + offX; let drawY = startY + offY; lines.forEach(line => { if(line){ ctx.strokeStyle = 'black'; ctx.lineWidth = fontSize * 0.04; ctx.strokeText(line, centerX, drawY); ctx.fillStyle = color; ctx.fillText(line, centerX, drawY); drawY += lineHeight; } }); }); 
+            if(footer && !isPreview) { ctx.font = 'bold 40px Arial'; ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.shadowBlur = 0; ctx.fillText(footer, RESOLUTION.width-50, RESOLUTION.height-50); } 
+        }
+        function setupEditorInteraction() { const canvas = document.getElementById('editorCanvas'); let isDragging = false, lastMouseX, lastMouseY; canvas.addEventListener('mousedown', e => { const rect = canvas.getBoundingClientRect(); const scaleX = RESOLUTION.width / rect.width; const scaleY = RESOLUTION.height / rect.height; const mouseX = (e.clientX - rect.left) * scaleX; const mouseY = (e.clientY - rect.top) * scaleY; let clickedLayer = -1; let minDst = 1000; const slide = tempSlides[currentSlideIndex]; slide.layers.forEach((layer, idx) => { const lx = (RESOLUTION.width/2) + (parseInt(layer.style?.x)||0); const ly = (RESOLUTION.height/2) + (parseInt(layer.style?.y)||0); const dst = Math.sqrt(Math.pow(mouseX-lx,2) + Math.pow(mouseY-ly,2)); if (dst < 400 && dst < minDst) { minDst = dst; clickedLayer = idx; } }); if(clickedLayer !== -1) { selectedLayerIndex = clickedLayer; loadLayerToToolbar(); isDragging = true; lastMouseX = e.offsetX; lastMouseY = e.offsetY; canvas.style.cursor = 'grabbing'; } }); window.addEventListener('mousemove', e => { if (!isDragging) return; const rect = canvas.getBoundingClientRect(); const scaleX = RESOLUTION.width / rect.width; const scaleY = RESOLUTION.height / rect.height; const mouseX = e.clientX - rect.left; const mouseY = e.clientY - rect.top; const dx = (mouseX - lastMouseX) * scaleX; const dy = (mouseY - lastMouseY) * scaleY; let s = tempSlides[currentSlideIndex].layers[selectedLayerIndex].style; if(!s) s = {}; s.x = (parseInt(s.x) || 0) + dx; s.y = (parseInt(s.y) || 0) + dy; tempSlides[currentSlideIndex].layers[selectedLayerIndex].style = s; lastMouseX = mouseX; lastMouseY = mouseY; renderEditorPreview(); }); window.addEventListener('mouseup', () => { if(isDragging) { isDragging = false; canvas.style.cursor = 'default'; } }); }
+        function openEditor(itemIndex, context) { 
+            let item = context === 'schedule' ? schedule[itemIndex] : library[itemIndex]; 
+            editingItem = { context, index: itemIndex, ref: item }; 
+            tempSlides = item.slides.map(s => { 
+                let slide = JSON.parse(JSON.stringify(s)); 
+                if(slide.text) { slide.layers = [{text:slide.text, style:slide.style||{}}]; delete slide.text; delete slide.style; } 
+                if(!slide.layers) slide.layers = []; 
+                if(slide.layers.length===0) slide.layers.push({text:"New Text", style:{}}); 
+                return slide; 
+            }); 
+            currentSlideIndex = 0; selectedLayerIndex = 0; 
+
+            // Load Title
+            document.getElementById('editItemTitle').value = item.title;
+
+            const select = document.getElementById('toolFont'); select.innerHTML = ""; availableFonts.forEach(f => { let opt = document.createElement('option'); opt.value = f; opt.innerText = f; select.appendChild(opt); }); 
+            document.getElementById('editorModal').style.display = 'flex'; 
+            renderEditorSlideList(); 
+            loadSlideToEditor(0); 
+        }
+        function renderEditorSlideList() { const list = document.getElementById('editorSlideList'); list.innerHTML = ""; tempSlides.forEach((slide, i) => { let div = document.createElement('div'); div.className = `slide-thumb ${i === currentSlideIndex ? 'active' : ''}`; let txt = slide.layers[0]?.text || "Empty"; div.innerHTML = `<span class="thumb-num">${i+1}</span> <span style="font-size:0.8rem; overflow:hidden; white-space:nowrap;">${txt.substring(0,12)}...</span>`; div.onclick = () => loadSlideToEditor(i); list.appendChild(div); }); }
+        function loadSlideToEditor(index) { currentSlideIndex = index; selectedLayerIndex = 0; renderEditorSlideList(); loadLayerToToolbar(); renderEditorPreview(); }
+        function loadLayerToToolbar() { const slide = tempSlides[currentSlideIndex]; if(slide.layers.length === 0) { document.getElementById('editorTextArea').value = ""; document.getElementById('editorTextArea').disabled = true; return; } document.getElementById('editorTextArea').disabled = false; if(selectedLayerIndex >= slide.layers.length) selectedLayerIndex = 0; const layer = slide.layers[selectedLayerIndex]; if(!layer.style) layer.style = {}; document.getElementById('toolFont').value = layer.style.font || "Segoe UI"; document.getElementById('toolSize').value = layer.style.fontSize || 90; document.getElementById('toolColor').value = layer.style.color || "#ffffff"; document.getElementById('editorTextArea').value = layer.text; document.getElementById('editorTextArea').focus(); }
+        function addTextBlock() { tempSlides[currentSlideIndex].layers.push({ text: "New Block", style: { fontSize: 60, y: 100 } }); selectedLayerIndex = tempSlides[currentSlideIndex].layers.length - 1; loadLayerToToolbar(); renderEditorPreview(); }
+        function removeCurrentBlock() { const slide = tempSlides[currentSlideIndex]; if(slide.layers.length <= 1) { alert("Slide must have at least one block."); return; } slide.layers.splice(selectedLayerIndex, 1); selectedLayerIndex = 0; loadLayerToToolbar(); renderEditorPreview(); }
+        function updateCurrentBlockText() { tempSlides[currentSlideIndex].layers[selectedLayerIndex].text = document.getElementById('editorTextArea').value; renderEditorSlideList(); renderEditorPreview(); }
+        function updateCurrentBlockStyle() { let s = tempSlides[currentSlideIndex].layers[selectedLayerIndex].style; s.font = document.getElementById('toolFont').value; s.fontSize = parseInt(document.getElementById('toolSize').value); s.color = document.getElementById('toolColor').value; renderEditorPreview(); }
+        function toggleStyle(prop) { let s = tempSlides[currentSlideIndex].layers[selectedLayerIndex].style; s[prop] = !s[prop]; renderEditorPreview(); }
+        function renderEditorPreview() { renderSlide(document.getElementById('editorCanvas').getContext('2d'), tempSlides[currentSlideIndex]); }
+        function addNewSlide() { tempSlides.push({layers:[{text:"New Slide", style:{}}]}); loadSlideToEditor(tempSlides.length - 1); }
+        function saveEditorChanges() { 
+            const newTitle = document.getElementById('editItemTitle').value.trim();
+            if (newTitle) editingItem.ref.title = newTitle;
+            
+            editingItem.ref.slides = tempSlides; 
+            if(editingItem.context === 'schedule') renderSchedule(); else renderLibrary(); 
+            document.getElementById('editorModal').style.display = 'none'; 
+            showToast(`Item "${editingItem.ref.title}" updated.`);
+        }
+        function closeEditor() { document.getElementById('editorModal').style.display = 'none'; }
+        function uploadSlideBG(input) { if(input.files && input.files[0]){ let r = new FileReader(); r.onload = e => { tempSlides[currentSlideIndex].bgImage = e.target.result; renderEditorPreview(); }; r.readAsDataURL(input.files[0]); } }
+        function clearSlideBG() { delete tempSlides[currentSlideIndex].bgImage; renderEditorPreview(); }
+        function createNewPresentation() { 
+            let newItem = { 
+                id: Date.now(), 
+                title: "New Presentation", 
+                type: "Presentation", 
+                slides: [{layers:[{text:"Title Slide", style:{fontSize:90}}]}] 
+            }; 
+            library.push(newItem); 
+            renderLibrary(); 
+            openEditor(library.length - 1, 'library'); 
+        }
+        function fetchGoogleFont() { const nameInput = document.getElementById('googleFontName'); const name = nameInput.value.trim(); const status = document.getElementById('fontStatus'); if(!name) return; status.innerText = "Fetching..."; status.style.color = "#bbb"; const link = document.createElement('link'); link.href = `https://fonts.googleapis.com/css?family=${name.replace(/ /g, '+')}&display=swap`; link.rel = 'stylesheet'; link.onload = () => { addFontOption(name); status.innerText = `Success! "${name}" added.`; status.style.color = "#4caf50"; nameInput.value = ""; renderFontList(); setTimeout(() => { document.getElementById('fontManager').style.display = 'none'; status.innerText = ""; }, 1000); }; link.onerror = () => { status.innerText = `Error: Font "${name}" not found.`; status.style.color = "#d32f2f"; }; document.head.appendChild(link); }
+        function uploadLocalFont(input) { if(input.files && input.files[0]) { const status = document.getElementById('fontStatus'); status.innerText = "Loading file..."; status.style.color = "#bbb"; const file = input.files[0]; const reader = new FileReader(); reader.onload = (e) => { const fontName = file.name.split('.')[0]; const fontFace = new FontFace(fontName, e.target.result); fontFace.load().then(loadedFace => { document.fonts.add(loadedFace); addFontOption(fontName); status.innerText = `Success! "${fontName}" loaded.`; status.style.color = "#4caf50"; input.value = ""; renderFontList(); setTimeout(() => { document.getElementById('fontManager').style.display = 'none'; status.innerText = ""; }, 1000); }).catch(err => { status.innerText = "Failed to load font file."; status.style.color = "#d32f2f"; }); }; reader.readAsArrayBuffer(file); } }
+        function addFontOption(name) { if(!availableFonts.includes(name)) { availableFonts.push(name); const select = document.getElementById('toolFont'); if(select) { let exists = false; for(let i=0; i<select.options.length; i++) { if(select.options[i].value === name) { exists = true; break; } } if(!exists) { const opt = document.createElement('option'); opt.value = name; opt.innerText = name; select.appendChild(opt); } } } }
+        function renderFontList() { const list = document.getElementById('installedFontsList'); list.innerHTML = ""; availableFonts.forEach(font => { const div = document.createElement('div'); div.className = 'font-list-item'; div.innerText = font; div.style.fontFamily = font; list.appendChild(div); }); }
+        function compressImage(base64Str) { return new Promise((resolve) => { const img = new Image(); img.src = base64Str; img.onload = () => { const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); canvas.width = 1920; canvas.height = 1080; ctx.drawImage(img, 0, 0, 1920, 1080); resolve(canvas.toDataURL('image/jpeg', 0.8)); }; img.onerror = () => resolve(null); }); }
+        async function saveSchedule() { if(schedule.length === 0) { showToast("Schedule is empty!"); return; } document.body.style.cursor = 'wait'; let exportData = JSON.parse(JSON.stringify(schedule)); for (let item of exportData) { for (let slide of item.slides) { if (slide.bgImage) { const compressed = await compressImage(slide.bgImage); if (compressed) slide.bgImage = compressed; } } } const blob = new Blob([JSON.stringify(exportData)], {type: "application/json"}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `Service_${new Date().toISOString().slice(0,10)}.schedule`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); document.body.style.cursor = 'default'; showToast("Schedule Saved!"); }
+        function handleScheduleLoad(input) { if (input.files[0]) { let r = new FileReader(); r.onload = e => { try { let data = JSON.parse(e.target.result); if(Array.isArray(data)) { schedule = data; renderSchedule(); showToast("Schedule Loaded Successfully!"); } else { showToast("Invalid Schedule File"); } } catch(err) { showToast("Error parsing schedule file."); } }; r.readAsText(input.files[0]); } }
+        
+        function handleContentLoad(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const fileName = file.name.toLowerCase();
+            const isHymn = fileName.endsWith('.hymn');
+            const isBible = fileName.endsWith('.bible');
+            
+            if (!isHymn && !isBible && !fileName.endsWith('.json')) {
+                showToast("Please select a valid .bible, .hymn, or .json file.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!Array.isArray(data)) throw new Error("Invalid format structure");
+                    
+                    if (isBible) {
+                        bibleLibrary = data;
+                        if (currentTab === 'Scripture') renderLibrary();
+                        showToast(`Loaded ${data.length} scriptures!`);
+                    } else if (isHymn || (fileName.endsWith('.json') && data.every(item => item.type === 'Song' || item.type === 'Presentation'))) {
+                        const newItems = data.filter(item => item.type === 'Song' || item.type === 'Presentation');
+                        library = [...library, ...newItems];
+                        if (currentTab === 'Song' || currentTab === 'Presentation') renderLibrary();
+                        showToast(`Loaded ${newItems.length} songs/hymns!`);
+                    } else {
+                        showToast("Could not determine content type. Loaded nothing.");
+                    }
+
+                } catch (err) {
+                    showToast("Error reading file: " + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function showContextMenu(e, context, index, item) { 
+            e.preventDefault(); 
+            rightClickedItem = { context, index, item }; 
+            const menu = document.getElementById('contextMenu'); 
+            menu.style.display = 'block'; 
+            menu.style.left = e.pageX + 'px'; 
+            menu.style.top = e.pageY + 'px'; 
+            
+            const rmvBtn = document.getElementById('ctxRemove');
+            const renameBtn = document.getElementById('ctxRename');
+
+            if (context === 'schedule') { 
+                rmvBtn.style.display = 'block'; 
+            } else if (context === 'library' && item.type === 'Presentation') {
+                rmvBtn.style.display = 'block'; 
+            } else {
+                rmvBtn.style.display = 'none';
+            }
+            renameBtn.style.display = 'block';
+            
+            renameBtn.onclick = () => {
+                menu.style.display = 'none';
+                let sourceArray = (context === 'schedule') ? schedule : library;
+                const sourceIndex = sourceArray.findIndex(i => i.id === item.id);
+                if (sourceIndex !== -1) openEditor(sourceIndex, context);
+            };
+        }
+        document.getElementById('ctxRemove').onclick = () => { if (rightClickedItem.context === 'schedule') { schedule.splice(rightClickedItem.index, 1); renderSchedule(); } else if (rightClickedItem.context === 'library') { library.splice(rightClickedItem.index, 1); renderLibrary(); } document.getElementById('contextMenu').style.display = 'none'; };
+        document.getElementById('ctxEdit').onclick = () => { 
+             let idx = rightClickedItem.index; 
+             if(rightClickedItem.context === 'library') idx = library.findIndex(i => i.id === rightClickedItem.item.id);
+             openEditor(idx, rightClickedItem.context); 
+        };
+        function openFontManager() { document.getElementById('fontManager').style.display='flex'; document.getElementById('fontStatus').innerText=''; renderFontList(); }
+        
+        function processFetchedData(data, fileName, extension, type) {
+            const temp = JSON.stringify(data);
+            const msgBox = document.getElementById('saveAlertModal').querySelector('h3');
+            
+            msgBox.innerText = `${type} Fetched!`;
+            
+            document.getElementById('saveMsg').innerHTML = `Successfully fetched ${data.length} ${type.toLowerCase()} items. Please save this <strong>.${extension}</strong> file to your computer.`;
+
+            document.getElementById('saveAlertModal').style.display = 'flex';
+            
+            const saveBtn = document.getElementById('btnSaveDisk');
+            const newBtn = saveBtn.cloneNode(true);
+            saveBtn.parentNode.replaceChild(newBtn, saveBtn);
+            newBtn.innerText = `Save .${extension} File`;
+
+            newBtn.onclick = () => {
+                const blob = new Blob([temp], {type: "application/json"});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = fileName + '.' + extension;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+                document.getElementById('saveAlertModal').style.display = 'none';
+                showToast(`Saved ${type} to disk.`);
+            };
+        }
+
+        function downloadBibleFromWeb() { 
+            const statusLabel = document.getElementById('projStatus');
+            statusLabel.innerText = "FETCHING BIBLE..."; statusLabel.style.color = "orange";
+            fetch('https://raw.githubusercontent.com/thiagobodruk/bible/master/json/en_kjv.json')
+                .then(r => r.json())
+                .then(data => {
+                    let newBibleLibrary = []; 
+                    let idCounter = 10000;
+                    if(Array.isArray(data) && data[0].chapters) {
+                        data.forEach(book => {
+                            book.chapters.forEach((chapter, cIdx) => {
+                                chapter.forEach((verse, vIdx) => {
+                                    newBibleLibrary.push({ 
+                                        id: idCounter++, 
+                                        title: `${book.name} ${cIdx+1}:${vIdx+1}`, 
+                                        type: "Scripture", 
+                                        slides: [{layers:[{text:verse, style:{fontSize:90}}]}] 
+                                    });
+                                });
+                            });
+                        });
+                        statusLabel.innerText = "OFFLINE"; statusLabel.style.color = "#d32f2f";
+                        processFetchedData(newBibleLibrary, 'OpenWorship_KJV', 'bible', 'Bible');
+                    } else throw new Error("Invalid format");
+                })
+                .catch(e => showToast("Download Failed: " + e.message));
+        }
+
+        // --- HYMN FETCH IMPLEMENTATION ---
+        function downloadHymnsFromWeb() {
+            const statusLabel = document.getElementById('projStatus');
+            statusLabel.innerText = "FETCHING HYMNS..."; statusLabel.style.color = "orange";
+
+            // Mock Data Generation (Reliable Public Domain Hymns)
+            let hymns = [
+                {title: "Amazing Grace", verses: ["Amazing Grace! how sweet the sound, That saved a wretch like me! I once was lost, but now am found, Was blind, but now I see."], chorus: ["Amazing Grace, amazing love, Reaching from heaven above."]},
+                {title: "Holy, Holy, Holy", verses: ["Holy, holy, holy! Lord God Almighty! Early in the morning our song shall rise to Thee; Holy, holy, holy, merciful and mighty! God in three Persons, blessed Trinity!"], chorus: [""]},
+                {title: "It Is Well With My Soul", verses: ["When peace, like a river, attendeth my way, When sorrows like sea billows roll; Whatever my lot, Thou hast taught me to say, It is well, it is well, with my soul."], chorus: ["It is well, with my soul, It is well, it is well, with my soul."]},
+            ];
+            
+            let formattedHymns = [];
+            let idCounter = 20000;
+
+            hymns.forEach(h => {
+                let slides = [];
+                h.verses.forEach(verse => slides.push({ layers: [{ text: verse.replace(/, /g, ',\n'), style: {fontSize: 80} }] }));
+                if (h.chorus[0] && h.chorus[0] !== "") {
+                    slides.unshift({ layers: [{ text: h.chorus.join('\n').replace(/, /g, ',\n'), style: {fontSize: 85, color:"#FFFF00"} }] }); 
+                }
+                
+                formattedHymns.push({
+                    id: idCounter++,
+                    title: h.title,
+                    type: "Song",
+                    slides: slides
+                });
+            });
+
+            statusLabel.innerText = "OFFLINE"; statusLabel.style.color = "#d32f2f";
+            processFetchedData(formattedHymns, 'OpenWorship_HymnPack', 'hymn', 'Hymns');
+        }
+
+        init();
+    </script>
+</body>
+</html>
