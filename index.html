@@ -81,6 +81,7 @@
             position: relative;
             overflow: hidden;
             z-index: 1;
+            cursor: pointer; /* Ensure button looks clickable */
         }
         .download-btn:before {
             content: '';
@@ -215,8 +216,8 @@
                  <button onclick="toggleInfoPanel()" class="text-sm font-semibold text-text-muted hover:text-primary-accent-blue transition duration-200">
                     Why Choose OpenWorship?
                 </button>
-                <a id="nav-download-btn" 
-                   href="https://raw.githubusercontent.com/Cleo876/open-worship/refs/heads/main/Open-Worship.html" 
+                <a id="nav-download-btn" onclick="handleDownload(event)"
+                   href="#" 
                    download="Open-Worship.html"
                    class="download-btn px-6 py-2 rounded-full text-base">Download <span id="nav-version">v2.3.14</span></a>
             </div>
@@ -242,8 +243,8 @@
                         The ultra-lightweight, 100% portable presentation tool built for efficiency and speed. 
                         <br class="hidden sm:block">No Installation. No Licenses. Just Worship.
                     </p>
-                    <a id="hero-download-btn" 
-                       href="https://raw.githubusercontent.com/Cleo876/open-worship/refs/heads/main/Open-Worship.html" 
+                    <a id="hero-download-btn" onclick="handleDownload(event)"
+                       href="#" 
                        download="Open-Worship.html"
                        class="download-btn inline-flex items-center justify-center px-12 py-5 rounded-full text-xl font-extrabold shadow-2xl">
                         <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -315,8 +316,8 @@
         </section>
 
         <!-- Call to Action --><section class="py-24 bg-dark-panel-subtle text-center">
-             <a id="footer-download-btn" 
-                href="https://raw.githubusercontent.com/Cleo876/open-worship/refs/heads/main/Open-Worship.html" 
+             <a id="footer-download-btn" onclick="handleDownload(event)"
+                href="#" 
                 download="Open-Worship.html"
                 class="download-btn inline-flex items-center justify-center px-16 py-6 rounded-full text-2xl font-extrabold">
                 <svg class="w-8 h-8 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -412,37 +413,70 @@
     </div>
 
     <script>
+        // Store the fetched content globally
+        let OPENWORSHIP_APP_SOURCE = null;
+        
         const GITHUB_RAW_URL = "https://raw.githubusercontent.com/Cleo876/open-worship/refs/heads/main/Open-Worship.html";
         const DOWNLOAD_FILENAME = "Open-Worship.html";
 
         /**
+         * Initiates the download process by creating a Blob from the stored source code.
+         * @param {Event} e - The click event.
+         */
+        function handleDownload(e) {
+            e.preventDefault();
+            
+            if (!OPENWORSHIP_APP_SOURCE) {
+                // If source hasn't been fetched yet, prompt and return
+                alert("The application file is still loading. Please try again in a moment.");
+                return;
+            }
+
+            // 1. Create a Blob from the fetched HTML source
+            const blob = new Blob([OPENWORSHIP_APP_SOURCE], {type: "text/html"});
+            
+            // 2. Create a temporary URL and anchor element to trigger download
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = DOWNLOAD_FILENAME;
+
+            // 3. Trigger download and clean up
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+
+        /**
          * Fetches the OpenWorship application file and extracts the version number.
-         * Then updates all version display elements and download links on the page.
+         * Then updates all version display elements and stores the source code globally.
          */
         async function fetchAndDisplayVersion() {
-            let version = "v2.3.14 (N/A)"; // Default if fetch fails
+            let version = "v2.3.14 (N/A)"; 
 
             try {
                 const response = await fetch(GITHUB_RAW_URL);
                 if (!response.ok) {
                     throw new Error(`Failed to fetch file: ${response.statusText}`);
                 }
+                
                 const content = await response.text();
+                OPENWORSHIP_APP_SOURCE = content; // Store the source code globally
                 
                 // Regex to find vX.X.X, vX.X.XX, etc. 
                 const match = content.match(/v\d+\.\d+\.\d+/);
                 if (match) {
                     version = match[0];
                 } else {
-                     version = "v2.3.14 (Unmatched)"; // Fallback if regex fails
+                     version = "v2.3.14 (Unmatched)"; 
                 }
             } catch (error) {
                 console.error("Error fetching version from GitHub:", error);
-                // Keep the default or show a specific error version
             }
             
             // --- Update All Elements ---
-            
             const elements = [
                 { id: 'nav-version', prefix: 'v', suffix: '' },
                 { id: 'hero-version', prefix: 'v', suffix: '' },
@@ -458,19 +492,6 @@
                     el.textContent = `${item.prefix}${cleanVersion}${item.suffix}`;
                 }
             });
-            
-            // Update download buttons href and download attribute
-            const buttons = document.querySelectorAll('a[id$="-download-btn"]');
-            buttons.forEach(btn => {
-                btn.href = GITHUB_RAW_URL;
-                btn.setAttribute('download', DOWNLOAD_FILENAME);
-            });
-            
-            const panelBtn = document.getElementById('panel-download-btn');
-            if (panelBtn) {
-                panelBtn.href = GITHUB_RAW_URL;
-                panelBtn.setAttribute('download', DOWNLOAD_FILENAME);
-            }
         }
 
         function toggleInfoPanel() {
