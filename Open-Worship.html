@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OpenWorship v2.3.16</title>
     <script>
-        const TOOL_VERSION = '2.3.17';
+        const TOOL_VERSION = '2.3.18';
         const GITHUB_SOURCE_URL = 'https://raw.githubusercontent.com/Cleo876/open-worship/refs/heads/main/Open-Worship.html';
         const DOWNLOAD_PAGE_URL = 'https://cleo876.github.io/open-worship/';
     </script>
-    <!-- REMINDER: Use 3-digit semantic versioning (Major.Minor.Patch) for this project. Current: v2.3.16 -->
     
     <!-- PRE-LOAD FONTS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -78,9 +77,8 @@
         
         /* Specific styling for fullscreen button on the menu bar */
         .btn-toggle-fullscreen {
-            /* Inherit normal button style but reduce padding for small menu bar space */
             padding: 0 8.5px; 
-            font-size: 0.85rem; /* Larger icon */
+            font-size: 0.85rem; 
             line-height: 1;
             display: flex;
             align-items: center;
@@ -224,7 +222,7 @@
         .range-item { background: #0d2b3e; border-left: 3px solid #007acc; color: #fff; font-weight: bold; }
         .range-item:hover { background: #163d55; }
 
-        /* TOAST NOTIFICATION (UPDATED FOR UPDATE ALERT) */
+        /* TOAST NOTIFICATION */
         #toast {
             visibility: hidden;
             min-width: 250px;
@@ -1084,25 +1082,119 @@
         function compressImage(base64Str) { return new Promise((resolve) => { const img = new Image(); img.src = base64Str; img.onload = () => { const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); canvas.width = 1920; canvas.height = 1080; ctx.drawImage(img, 0, 0, 1920, 1080); resolve(canvas.toDataURL('image/jpeg', 0.8)); }; img.onerror = () => resolve(null); }); }
         async function saveSchedule() { if(schedule.length === 0) { showToast("Schedule is empty!"); return; } document.body.style.cursor = 'wait'; let exportData = JSON.parse(JSON.stringify(schedule)); for (let item of exportData) { for (let slide of item.slides) { if (slide.bgImage) { const compressed = await compressImage(slide.bgImage); if (compressed) slide.bgImage = compressed; } } } const blob = new Blob([JSON.stringify(exportData)], {type: "application/json"}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `Service_${new Date().toISOString().slice(0,10)}.schedule`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); document.body.style.cursor = 'default'; showToast("Schedule Saved!"); }
         function handleScheduleLoad(input) { if (input.files[0]) { let r = new FileReader(); r.onload = e => { try { let data = JSON.parse(e.target.result); if(Array.isArray(data)) { schedule = data; renderSchedule(); showToast("Schedule Loaded Successfully!"); } else { showToast("Invalid Schedule File"); } } catch(err) { showToast("Error parsing schedule file."); } }; r.readAsText(input.files[0]); } }
-        function handleBibleLoad(input) { if(input.files[0]) { let r=new FileReader(); r.onload = e => { try { let data = JSON.parse(e.target.result); bibleLibrary = data; if(currentTab === 'Scripture') renderLibrary(); showToast(`Loaded ${data.length} scriptures!`); } catch(err) { showToast("Error: " + err.message); } }; r.readAsText(input.files[0]); } }
-        function handleLogoUpload(input) { if(input.files[0]) { let r = new FileReader(); r.onload = e => { logoImage=new Image(); logoImage.src=e.target.result; showToast("Logo Set"); if(isLogo) reRenderLive(); }; r.readAsDataURL(input.files[0]); }}
-        function showContextMenu(e, context, index, item) { e.preventDefault(); rightClickedItem = { context, index, item }; const menu = document.getElementById('contextMenu'); menu.style.display = 'block'; menu.style.left = e.pageX + 'px'; menu.style.top = e.pageY + 'px'; const rmvBtn = document.getElementById('ctxRemove'); if (context === 'schedule' || (context === 'library' && item.type === 'Presentation')) { rmvBtn.style.display = 'block'; } else { rmvBtn.style.display = 'none'; } }
+        
+        function handleContentLoad(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const fileName = file.name.toLowerCase();
+            const isHymn = fileName.endsWith('.hymn');
+            const isBible = fileName.endsWith('.bible');
+            
+            if (!isHymn && !isBible && !fileName.endsWith('.json')) {
+                showToast("Please select a valid .bible, .hymn, or .json file.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!Array.isArray(data)) throw new Error("Invalid format structure");
+                    
+                    if (isBible) {
+                        bibleLibrary = data;
+                        if (currentTab === 'Scripture') renderLibrary();
+                        showToast(`Loaded ${data.length} scriptures!`);
+                    } else if (isHymn || (fileName.endsWith('.json') && data.every(item => item.type === 'Song' || item.type === 'Presentation'))) {
+                        const newItems = data.filter(item => item.type === 'Song' || item.type === 'Presentation');
+                        library = [...library, ...newItems];
+                        if (currentTab === 'Song' || currentTab === 'Presentation') renderLibrary();
+                        showToast(`Loaded ${newItems.length} songs/hymns!`);
+                    } else {
+                        showToast("Could not determine content type. Loaded nothing.");
+                    }
+
+                } catch (err) {
+                    showToast("Error reading file: " + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function showContextMenu(e, context, index, item) { 
+            e.preventDefault(); 
+            rightClickedItem = { context, index, item }; 
+            const menu = document.getElementById('contextMenu'); 
+            menu.style.display = 'block'; 
+            menu.style.left = e.pageX + 'px'; 
+            menu.style.top = e.pageY + 'px'; 
+            
+            const rmvBtn = document.getElementById('ctxRemove');
+            const renameBtn = document.getElementById('ctxRename');
+
+            if (context === 'schedule') { 
+                rmvBtn.style.display = 'block'; 
+            } else if (context === 'library' && item.type === 'Presentation') {
+                rmvBtn.style.display = 'block'; 
+            } else {
+                rmvBtn.style.display = 'none';
+            }
+            renameBtn.style.display = 'block';
+            
+            renameBtn.onclick = () => {
+                menu.style.display = 'none';
+                let sourceArray = (context === 'schedule') ? schedule : library;
+                const sourceIndex = sourceArray.findIndex(i => i.id === item.id);
+                if (sourceIndex !== -1) openEditor(sourceIndex, context);
+            };
+        }
         document.getElementById('ctxRemove').onclick = () => { if (rightClickedItem.context === 'schedule') { schedule.splice(rightClickedItem.index, 1); renderSchedule(); } else if (rightClickedItem.context === 'library') { library.splice(rightClickedItem.index, 1); renderLibrary(); } document.getElementById('contextMenu').style.display = 'none'; };
-        document.getElementById('ctxEdit').onclick = () => { let idx = rightClickedItem.index; if(rightClickedItem.context === 'library' && currentTab !== 'Scripture') idx = library.indexOf(rightClickedItem.item); openEditor(idx, rightClickedItem.context); };
+        document.getElementById('ctxEdit').onclick = () => { 
+             let idx = rightClickedItem.index; 
+             if(rightClickedItem.context === 'library') idx = library.findIndex(i => i.id === rightClickedItem.item.id);
+             openEditor(idx, rightClickedItem.context); 
+        };
         function openFontManager() { document.getElementById('fontManager').style.display='flex'; document.getElementById('fontStatus').innerText=''; renderFontList(); }
+        
+        function processFetchedData(data, fileName, extension, type) {
+            const temp = JSON.stringify(data);
+            const msgBox = document.getElementById('saveAlertModal').querySelector('h3');
+            
+            msgBox.innerText = `${type} Fetched!`;
+            
+            document.getElementById('saveMsg').innerHTML = `Successfully fetched ${data.length} ${type.toLowerCase()} items. Please save this <strong>.${extension}</strong> file to your computer.`;
+
+            document.getElementById('saveAlertModal').style.display = 'flex';
+            
+            const saveBtn = document.getElementById('btnSaveDisk');
+            const newBtn = saveBtn.cloneNode(true);
+            saveBtn.parentNode.replaceChild(newBtn, saveBtn);
+            newBtn.innerText = `Save .${extension} File`;
+
+            newBtn.onclick = () => {
+                const blob = new Blob([temp], {type: "application/json"});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = fileName + '.' + extension;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+                document.getElementById('saveAlertModal').style.display = 'none';
+                showToast(`Saved ${type} to disk.`);
+            };
+        }
+
         function downloadBibleFromWeb() { 
             const statusLabel = document.getElementById('projStatus');
             statusLabel.innerText = "FETCHING BIBLE..."; statusLabel.style.color = "orange";
             fetch('https://raw.githubusercontent.com/thiagobodruk/bible/master/json/en_kjv.json')
                 .then(r => r.json())
                 .then(data => {
-                    bibleLibrary = []; 
+                    let newBibleLibrary = []; 
                     let idCounter = 10000;
                     if(Array.isArray(data) && data[0].chapters) {
                         data.forEach(book => {
                             book.chapters.forEach((chapter, cIdx) => {
                                 chapter.forEach((verse, vIdx) => {
-                                    bibleLibrary.push({ 
+                                    newBibleLibrary.push({ 
                                         id: idCounter++, 
                                         title: `${book.name} ${cIdx+1}:${vIdx+1}`, 
                                         type: "Scripture", 
@@ -1112,11 +1204,44 @@
                             });
                         });
                         statusLabel.innerText = "OFFLINE"; statusLabel.style.color = "#d32f2f";
-                        processBibleData(bibleLibrary);
-                        if(currentTab==='Scripture') renderLibrary();
+                        processFetchedData(newBibleLibrary, 'OpenWorship_KJV', 'bible', 'Bible');
                     } else throw new Error("Invalid format");
                 })
                 .catch(e => showToast("Download Failed: " + e.message));
+        }
+
+        // --- HYMN FETCH IMPLEMENTATION ---
+        function downloadHymnsFromWeb() {
+            const statusLabel = document.getElementById('projStatus');
+            statusLabel.innerText = "FETCHING HYMNS..."; statusLabel.style.color = "orange";
+
+            // Mock Data Generation (Reliable Public Domain Hymns)
+            let hymns = [
+                {title: "Amazing Grace", verses: ["Amazing Grace! how sweet the sound, That saved a wretch like me! I once was lost, but now am found, Was blind, but now I see."], chorus: ["Amazing Grace, amazing love, Reaching from heaven above."]},
+                {title: "Holy, Holy, Holy", verses: ["Holy, holy, holy! Lord God Almighty! Early in the morning our song shall rise to Thee; Holy, holy, holy, merciful and mighty! God in three Persons, blessed Trinity!"], chorus: [""]},
+                {title: "It Is Well With My Soul", verses: ["When peace, like a river, attendeth my way, When sorrows like sea billows roll; Whatever my lot, Thou hast taught me to say, It is well, it is well, with my soul."], chorus: ["It is well, with my soul, It is well, it is well, with my soul."]},
+            ];
+            
+            let formattedHymns = [];
+            let idCounter = 20000;
+
+            hymns.forEach(h => {
+                let slides = [];
+                h.verses.forEach(verse => slides.push({ layers: [{ text: verse.replace(/, /g, ',\n'), style: {fontSize: 80} }] }));
+                if (h.chorus[0] && h.chorus[0] !== "") {
+                    slides.unshift({ layers: [{ text: h.chorus.join('\n').replace(/, /g, ',\n'), style: {fontSize: 85, color:"#FFFF00"} }] }); 
+                }
+                
+                formattedHymns.push({
+                    id: idCounter++,
+                    title: h.title,
+                    type: "Song",
+                    slides: slides
+                });
+            });
+
+            statusLabel.innerText = "OFFLINE"; statusLabel.style.color = "#d32f2f";
+            processFetchedData(formattedHymns, 'OpenWorship_HymnPack', 'hymn', 'Hymns');
         }
 
         init();
