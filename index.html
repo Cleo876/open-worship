@@ -448,11 +448,13 @@
 
     <!-- Footer --><footer class="bg-dark-bg-deep py-12 border-t border-gray-800">
         <div class="max-w-7xl mx-auto px-4 text-center text-gray-700 text-sm">
-            &copy; 2025 OpenWorship Project. Built using pure HTML5 and JavaScript. | <b>Open Source Spirit.</b>
+            &copy; 2024 OpenWorship Project. Built using pure HTML5 and JavaScript. | <b>Open Source Spirit.</b>
         </div>
     </footer>
 
-    <!-- --- FULL SCREEN INFO PANEL --- --><div id="infoPanel" class="fixed top-0 right-0 w-full h-full z-50 overflow-y-auto transform translate-x-full transition-transform duration-400 ease-in-out bg-dark-bg-deep border-l-4 border-primary-accent-blue">
+    <!-- --- FULL SCREEN INFO PANEL --- -->
+    <!-- FIXED: Added the 'info-panel' CSS class to make the sliding sheet work -->
+    <div id="infoPanel" class="info-panel">
         
         <!-- Header --><div class="info-header flex justify-between items-center bg-dark-panel-subtle relative z-10">
             <h2 class="text-3xl font-extrabold text-white">Understanding OpenWorship</h2>
@@ -470,7 +472,7 @@
                     <div>
                         <h4 class="text-2xl font-semibold text-text-light mb-3">Our Core Belief: Access Over Income</h4>
                         <p class="text-text-muted mb-4">
-                            <b>"Open Worship"</b> was chosen to reflect the <b>Open Source</b> and <b>Open Web</b> nature of the tool. This tool is "Open" for anyone to use, inspect, and modify, and it runs on the "Open" web platform (HTML5/Canvas) without requiring installation. It democratizes professional worship presentation technology.
+                            <b>"Open Worship"</b> was chosen to reflect the <b>Open Source</b> and <b>Open Web</b> nature of the tool. Unlike expensive, proprietary software, this tool is "Open" for anyone to use, inspect, and modify, and it runs on the "Open" web platform (HTML5/Canvas) without requiring installation. It democratizes professional worship presentation technology.
                         </p>
                         <ul class="list-disc list-inside text-text-muted space-y-2 ml-4">
                             <li><b>Open Source Spirit:</b> The source code (HTML/CSS/JS) is fully visible, editable, and free for anyone to inspect, modify, or improve.</li>
@@ -517,7 +519,8 @@
     </div>
     
     <!-- --- DONATION INFO PANEL --- -->
-    <div id="donationPanel" class="info-panel fixed top-0 right-0 w-full h-full z-50 overflow-y-auto transform translate-x-full transition-transform duration-400 ease-in-out bg-dark-bg-deep border-l-4 border-primary-accent-blue">
+    <!-- FIXED: Already has the 'info-panel' class -->
+    <div id="donationPanel" class="info-panel">
         
         <!-- Header -->
         <div class="info-header flex justify-between items-center bg-dark-panel-subtle relative z-10">
@@ -706,15 +709,43 @@
             }
         }
 
+        /**
+         * Toggles the info panel (sliding sheet) open and closed
+         * @param {string} panelId - The ID of the panel to toggle
+         */
         function toggleInfoPanel(panelId) {
             const panel = document.getElementById(panelId);
+            const body = document.body;
+            
             if (panel) {
+                // Close any other open panels first
+                document.querySelectorAll('.info-panel.active').forEach(otherPanel => {
+                    if (otherPanel.id !== panelId) {
+                        otherPanel.classList.remove('active');
+                    }
+                });
+                
+                // Toggle the requested panel
                 panel.classList.toggle('active');
-                document.body.classList.toggle('overflow-hidden');
+                
+                // Toggle body overflow
+                if (panel.classList.contains('active')) {
+                    body.style.overflow = 'hidden';
+                } else {
+                    body.style.overflow = '';
+                }
             } else {
-                 console.error("Error: Could not find element with id: " + panelId);
+                console.error("Error: Could not find element with id: " + panelId);
             }
         }
+
+        // Close panels when clicking on the overlay (outside content)
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('info-panel') && !e.target.closest('.info-header')) {
+                e.target.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', () => {
