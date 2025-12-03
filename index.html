@@ -72,6 +72,32 @@
             border-color: var(--secondary-accent-purple);
         }
 
+        /* Comparison Table Styles */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2rem;
+        }
+        .comparison-table th, .comparison-table td {
+            padding: 1rem;
+            text-align: center;
+            border-bottom: 1px solid #1e293b;
+        }
+        .comparison-table th {
+            background-color: #0f172a;
+            color: var(--primary-accent-blue);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .comparison-table td:first-child {
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-light);
+        }
+        .check-icon { color: #10b981; }
+        .times-icon { color: #ef4444; }
+        
         /* Download Button (Call to Action) */
         .download-btn {
             background: linear-gradient(90deg, var(--primary-accent-blue) 0%, var(--secondary-accent-purple) 100%);
@@ -269,67 +295,141 @@
             </div>
         </section>
 
-        <!-- Problem Solved Section (Higher Contrast) --><section class="py-24 bg-dark-panel-subtle">
+        <!-- Feature Breakdown Grid -->
+        <section class="py-24 bg-dark-panel-subtle">
             <div class="max-w-7xl mx-auto px-4 lg:px-8">
-                <h2 class="text-center mb-16 font-extrabold text-4xl">THE PROBLEMS WE ELIMINATE</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <h2 class="text-center mb-16 font-extrabold text-4xl">POWERFUL FEATURES</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     
-                    <!-- Problem 1: Lag --><div class="problem-card p-8 h-full transition hover:shadow-lg">
-                        <svg class="w-14 h-14 mb-4 icon-red" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                        <h3 class="text-2xl font-semibold mb-3">High Resource Demand</h3>
-                        <p>Traditional software often crashes older laptops due to heavy video rendering. OpenWorship's Canvas Engine is dramatically lighter, preserving your hardware's performance.</p>
-                    </div>
-                    
-                    <!-- Problem 2: Cost --><div class="problem-card p-8 h-full transition hover:shadow-lg">
-                        <svg class="w-14 h-14 mb-4 icon-red" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c1.657 0 3 .895 3 2s-1.343 2-3 2h-1v-2h1c-.167 0-1-.157-1-1s.833-1 1-1zM7 21a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v14a2 2 0 01-2 2H7z"></path></svg>
-                        <h3 class="text-2xl font-semibold mb-3">Expensive Licenses</h3>
-                        <p>Avoid hundreds of dollars in licensing fees. OpenWorship is fully free and open source, making professional presentation technology accessible to every church, regardless of budget.</p>
+                    <!-- Feature 1 -->
+                    <div class="feature-card p-6">
+                        <div class="text-primary-accent-blue text-3xl mb-4"><i class="fas fa-book-bible"></i></div>
+                        <h3 class="text-xl font-bold mb-2 text-white">Scripture Database</h3>
+                        <p class="text-text-muted">Instantly fetch and display KJV scripture. Create custom slide ranges on the fly.</p>
                     </div>
 
-                    <!-- Problem 3: Setup --><div class="problem-card p-8 h-full transition hover:shadow-lg">
-                        <svg class="w-14 h-14 mb-4 icon-red" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                        <h3 class="text-2xl font-semibold mb-3">Setup Nightmares</h3>
-                        <p>Zero installation required. Run OpenWorship instantly from a USB drive or cloud link on Windows, Mac, or Linux—ultimate flexibility for your volunteer teams.</p>
+                    <!-- Feature 2 -->
+                    <div class="feature-card p-6">
+                        <div class="text-primary-accent-blue text-3xl mb-4"><i class="fas fa-music"></i></div>
+                        <h3 class="text-xl font-bold mb-2 text-white">Song Scheduling</h3>
+                        <p class="text-text-muted">Easily build and manage your worship setlists. Import public domain hymns with one click.</p>
                     </div>
+
+                    <!-- Feature 3 -->
+                    <div class="feature-card p-6">
+                        <div class="text-primary-accent-blue text-3xl mb-4"><i class="fas fa-desktop"></i></div>
+                        <h3 class="text-xl font-bold mb-2 text-white">Dual Screen Output</h3>
+                        <p class="text-text-muted">Professional audience view window for projectors, keeping your operator controls separate.</p>
+                    </div>
+
+                    <!-- Feature 4 -->
+                    <div class="feature-card p-6">
+                        <div class="text-primary-accent-blue text-3xl mb-4"><i class="fas fa-pen-to-square"></i></div>
+                        <h3 class="text-xl font-bold mb-2 text-white">Visual Slide Editor</h3>
+                        <p class="text-text-muted">Drag-and-drop text, change fonts, colors, and backgrounds with a built-in editor.</p>
+                    </div>
+
+                    <!-- Feature 5 -->
+                    <div class="feature-card p-6">
+                        <div class="text-primary-accent-blue text-3xl mb-4"><i class="fas fa-wifi"></i></div>
+                        <h3 class="text-xl font-bold mb-2 text-white">100% Offline</h3>
+                        <p class="text-text-muted">No internet required after download. Perfect for portable setups and reliable performance.</p>
+                    </div>
+
+                    <!-- Feature 6 -->
+                    <div class="feature-card p-6">
+                        <div class="text-primary-accent-blue text-3xl mb-4"><i class="fas fa-laptop-code"></i></div>
+                        <h3 class="text-xl font-bold mb-2 text-white">Cross-Platform</h3>
+                        <p class="text-text-muted">Runs on Windows, macOS, Linux, and even Chromebooks via any modern web browser.</p>
+                    </div>
+
                 </div>
             </div>
         </section>
 
-
-        <!-- Features Section (Accent Color Border) --><section class="py-24 bg-dark-bg-deep">
-            <div class="max-w-7xl mx-auto px-4 lg:px-8">
-                <h2 class="text-center mb-16 font-extrabold text-4xl">KEY ADVANTAGES</h2>
+        <!-- Comparison Table Section -->
+        <section class="py-24 bg-dark-bg-deep">
+            <div class="max-w-5xl mx-auto px-4 lg:px-8">
+                <h2 class="text-center mb-16 font-extrabold text-4xl">HOW WE COMPARE</h2>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                    
-                    <!-- Feature 1: Canvas Rendering --><div class="feature-card p-8">
-                        <span class="text-sm font-bold text-gray-500 mb-2 block">01 / EFFICIENCY</span>
-                        <h3 class="text-2xl font-semibold mb-4">Lag-Free Canvas Engine</h3>
-                        <p>HTML5 Canvas rendering ensures <b>smooth, instantaneous transitions</b> and reduces mid-service crashes on any hardware, bypassing heavy video drivers.</p>
-                    </div>
-
-                    <!-- Feature 2: Portability --><div class="feature-card p-8">
-                        <span class="text-sm font-bold text-gray-500 mb-2 block">02 / PORTABILITY</span>
-                        <h3 class="text-2xl font-semibold mb-4">True Single-File Application</h3>
-                        <p>The entire app in one <b>.html</b> file. Unparalleled portability—run it from a USB stick, cloud drive, or desktop with no setup.</p>
-                    </div>
-
-                    <!-- Feature 3: Offline --><div class="feature-card p-8">
-                        <span class="text-sm font-bold text-gray-500 mb-2 block">03 / STABILITY</span>
-                        <h3 class="text-2xl font-semibold mb-4">Guaranteed Offline Capability</h3>
-                        <p>Media and schedules are Base64 embedded into the <b>.schedule</b> file, ensuring your presentation never breaks, even if the Wi-Fi fails.</p>
-                    </div>
-                    
-                    <!-- Feature 4: Open Design --><div class="feature-card p-8">
-                        <span class="text-sm font-bold text-gray-500 mb-2 block">04 / ECOSYSTEM</span>
-                        <h3 class="text-2xl font-semibold mb-4">Public Domain Content & Tools</h3>
-                        <p>Tools to fetch and save massive libraries of public domain Bibles and Hymns. Manage lyrics legally without CCLI subscription barriers.</p>
-                    </div>
+                <div class="overflow-x-auto">
+                    <table class="comparison-table w-full text-left">
+                        <thead>
+                            <tr class="border-b border-gray-700">
+                                <th class="p-4 text-lg text-text-muted font-medium">Feature</th>
+                                <th class="p-4 text-xl font-bold text-primary-accent-blue text-center bg-dark-panel-subtle rounded-t-lg">OpenWorship</th>
+                                <th class="p-4 text-lg text-text-muted text-center">Paid Software</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-text-light">
+                            <tr class="border-b border-gray-800 hover:bg-gray-900">
+                                <td class="p-4">Cost</td>
+                                <td class="p-4 text-center bg-dark-panel-subtle font-bold text-green-400">FREE Forever</td>
+                                <td class="p-4 text-center text-text-muted">$200 - $1000+</td>
+                            </tr>
+                            <tr class="border-b border-gray-800 hover:bg-gray-900">
+                                <td class="p-4">Installation Required</td>
+                                <td class="p-4 text-center bg-dark-panel-subtle"><i class="fas fa-times text-green-400"></i> (Runs in Browser)</td>
+                                <td class="p-4 text-center"><i class="fas fa-check text-red-400"></i> (Heavy Install)</td>
+                            </tr>
+                            <tr class="border-b border-gray-800 hover:bg-gray-900">
+                                <td class="p-4">OS Compatibility</td>
+                                <td class="p-4 text-center bg-dark-panel-subtle"><i class="fab fa-windows"></i> <i class="fab fa-apple"></i> <i class="fab fa-linux"></i> (Any)</td>
+                                <td class="p-4 text-center">Often Windows or Mac Only</td>
+                            </tr>
+                            <tr class="border-b border-gray-800 hover:bg-gray-900">
+                                <td class="p-4">Portable (USB Stick)</td>
+                                <td class="p-4 text-center bg-dark-panel-subtle"><i class="fas fa-check text-green-400"></i></td>
+                                <td class="p-4 text-center"><i class="fas fa-times text-red-400"></i></td>
+                            </tr>
+                            <tr class="border-b border-gray-800 hover:bg-gray-900">
+                                <td class="p-4">Bible Database</td>
+                                <td class="p-4 text-center bg-dark-panel-subtle"><i class="fas fa-check text-green-400"></i> (KJV Included)</td>
+                                <td class="p-4 text-center"><i class="fas fa-check text-green-400"></i></td>
+                            </tr>
+                            <tr class="border-b border-gray-800 hover:bg-gray-900">
+                                <td class="p-4">Dual Screen Output</td>
+                                <td class="p-4 text-center bg-dark-panel-subtle"><i class="fas fa-check text-green-400"></i></td>
+                                <td class="p-4 text-center"><i class="fas fa-check text-green-400"></i></td>
+                            </tr>
+                             <tr class="border-b border-gray-800 hover:bg-gray-900">
+                                <td class="p-4">Hardware Requirements</td>
+                                <td class="p-4 text-center bg-dark-panel-subtle font-bold text-green-400">Low (Old Laptops OK)</td>
+                                <td class="p-4 text-center text-red-400">High (Dedicated GPU)</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </section>
 
-        <!-- Call to Action --><section class="py-24 bg-dark-panel-subtle text-center">
+        <!-- Community & Support Section -->
+        <section class="py-20 bg-dark-panel-subtle text-center">
+            <div class="max-w-4xl mx-auto px-4">
+                <h2 class="text-3xl font-bold text-white mb-8">Community & Support</h2>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <a href="https://github.com/Cleo876/open-worship/issues/new" target="_blank" class="p-6 bg-dark-bg-deep rounded-lg hover:bg-gray-800 transition block group border border-gray-700 hover:border-red-400">
+                        <div class="text-red-400 text-3xl mb-3"><i class="fas fa-bug"></i></div>
+                        <h3 class="text-xl font-bold text-white mb-2 group-hover:text-red-400">Report a Bug</h3>
+                        <p class="text-sm text-text-muted">Found an issue? Let us know on GitHub so we can fix it.</p>
+                    </a>
+                    
+                    <a href="https://github.com/Cleo876/open-worship/issues/new" target="_blank" class="p-6 bg-dark-bg-deep rounded-lg hover:bg-gray-800 transition block group border border-gray-700 hover:border-green-400">
+                        <div class="text-green-400 text-3xl mb-3"><i class="fas fa-lightbulb"></i></div>
+                        <h3 class="text-xl font-bold text-white mb-2 group-hover:text-green-400">Request Feature</h3>
+                        <p class="text-sm text-text-muted">Have an idea? Submit a feature request to help us grow.</p>
+                    </a>
+
+                    <a href="https://github.com/Cleo876/open-worship/projects?query=is%3Aopen" target="_blank" class="p-6 bg-dark-bg-deep rounded-lg hover:bg-gray-800 transition block group border border-gray-700 hover:border-primary-accent-blue">
+                        <div class="text-primary-accent-blue text-3xl mb-3"><i class="fas fa-map-signs"></i></div>
+                        <h3 class="text-xl font-bold text-white mb-2 group-hover:text-primary-accent-blue">View Roadmap</h3>
+                        <p class="text-sm text-text-muted">See what we're working on next for OpenWorship.</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Call to Action --><section class="py-24 bg-dark-bg-deep text-center">
              <a id="footer-download-btn" onclick="handleDownload(event)"
                 href="#" 
                 download="Open-Worship.html"
@@ -370,7 +470,7 @@
                     <div>
                         <h4 class="text-2xl font-semibold text-text-light mb-3">Our Core Belief: Access Over Income</h4>
                         <p class="text-text-muted mb-4">
-                            <b>"Open Worship"</b> was chosen to reflect the <b>Open Source</b> and <b>Open Web</b> nature of the tool. Unlike expensive, proprietary software, this tool is "Open" for anyone to use, inspect, and modify, and it runs on the "Open" web platform (HTML5/Canvas) without requiring installation. It democratizes professional worship presentation technology.
+                            <b>"Open Worship"</b> was chosen to reflect the <b>Open Source</b> and <b>Open Web</b> nature of the tool. This tool is "Open" for anyone to use, inspect, and modify, and it runs on the "Open" web platform (HTML5/Canvas) without requiring installation. It democratizes professional worship presentation technology.
                         </p>
                         <ul class="list-disc list-inside text-text-muted space-y-2 ml-4">
                             <li><b>Open Source Spirit:</b> The source code (HTML/CSS/JS) is fully visible, editable, and free for anyone to inspect, modify, or improve.</li>
