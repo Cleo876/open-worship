@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenWorship v2.3.16</title>
+    <title>OpenWorship v2.3.20</title>
     <script>
-        const TOOL_VERSION = '2.3.18';
+        const TOOL_VERSION = '2.3.20';
         const GITHUB_SOURCE_URL = 'https://raw.githubusercontent.com/Cleo876/open-worship/refs/heads/main/Open-Worship.html';
         const DOWNLOAD_PAGE_URL = 'https://cleo876.github.io/open-worship/';
     </script>
@@ -77,13 +77,13 @@
         
         /* Specific styling for fullscreen button on the menu bar */
         .btn-toggle-fullscreen {
-            padding: 0 8.5px; 
-            font-size: 0.85rem; 
+            padding: 0 8.5px;
+            font-size: 0.85rem;
             line-height: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 22px;
+            height: 27px;
             margin-left: 5px;
         }
 
@@ -103,7 +103,16 @@
         .schedule-container { flex: 1; overflow-y: auto; min-height: 50px; }
         .schedule-container.drag-over { background: rgba(0, 122, 204, 0.1); }
         
-        .schedule-item { padding: 10px 12px; border-bottom: 1px solid #2a2a2a; cursor: default; display: flex; font-size: 0.9rem; }
+        .schedule-item { 
+            padding: 10px 12px; 
+            border-bottom: 1px solid #2a2a2a; 
+            cursor: default; 
+            display: flex; 
+            font-size: 0.9rem; 
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
         .schedule-item:hover { background: #333; }
         .schedule-item.selected { background: var(--accent); color: white; border-left: 3px solid #66b2ff; }
         .schedule-item.dragging { opacity: 0.5; background: #444; border: 1px dashed #666; }
@@ -113,8 +122,32 @@
         .tab { padding: 8px 20px; cursor: pointer; color: #888; border-right: 1px solid #333; }
         .tab.active { background: var(--bg-panel); color: var(--accent); font-weight: bold; border-bottom: 2px solid var(--accent); }
         
-        .library-content { flex: 1; display: flex; position: relative; } 
-        .library-list { flex: 1; overflow-y: auto; border-right: 1px solid var(--border); }
+        .library-content { 
+            flex: 1; 
+            display: flex; 
+            position: relative; 
+            overflow: hidden; /* Changed from relative to hidden to contain scrolling */
+        } 
+        
+        /* NEW: Tab-specific library containers */
+        .library-list-container {
+            flex: 1;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+        }
+        
+        .library-list-container.active {
+            display: flex;
+        }
+        
+        .library-list {
+            flex: 1;
+            overflow-y: auto;
+            border-right: 1px solid var(--border);
+            position: relative;
+        }
         
         /* FLOATING ADD BUTTON */
         .fab-add {
@@ -138,7 +171,7 @@
             justify-content: center;
             padding: 20px;
             overflow: hidden;
-            position: relative; /* Container for absolute children */
+            position: relative;
         }
         
         /* CANVAS (Visual Preview) */
@@ -152,7 +185,7 @@
         
         /* TEXT AREA (Scripture Preview) */
         #libraryPreviewText {
-            position: absolute; /* Overlay canvas area */
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
@@ -165,8 +198,8 @@
             font-size: 0.9rem;
             line-height: 1.4;
             overflow-y: auto;
-            white-space: pre-wrap; /* Preserve formatting */
-            display: none; /* Hidden by default */
+            white-space: pre-wrap;
+            display: none;
         }
         
         /* PREVIEW CARDS */
@@ -176,7 +209,7 @@
         canvas.preview-canvas { background: black; border: 2px solid #333; border-radius: 4px; width: 200px; aspect-ratio: 16/9; object-fit: contain; }
         canvas.live-monitor { 
             width: 100%; aspect-ratio: 16/9; border: 2px solid #444; background: black; border-radius: 4px;
-            transition: opacity 0.3s ease; /* FADE TRANSITION */
+            transition: opacity 0.3s ease;
         }
         canvas.live-monitor.fading { opacity: 0; }
 
@@ -292,9 +325,9 @@
         }
         .close-update:hover { color: white; }
 
-        @webkit-keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @-webkit-keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
         @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
-        @webkit-keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+        @-webkit-keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
         @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
         @keyframes slideUp { from {bottom: -100px; opacity: 0;} to {bottom: 20px; opacity: 1;} }
 
@@ -325,7 +358,7 @@
             </div>
         </div>
         <div class="menu-item">Window <div class="dropdown"><div onclick="openProjector()">Open Projector</div></div></div>
-        <div style="margin-left:auto; color:#666; font-weight:bold;"><span id="version-display">v2.3.16</span></div>
+        <div style="margin-left:auto; color:#666; font-weight:bold;"><span id="version-display">v2.3.20</span></div>
         <button id="btnFullscreen" onclick="toggleAppFullscreen()" class="btn-toggle-fullscreen" title="Toggle Fullscreen Mode">
              &#x26F6;
         </button>
@@ -372,10 +405,29 @@
                 <input type="text" id="librarySearch" placeholder="Search Library..." style="background:#111; border:1px solid #333; color:white; padding:5px 12px; width:250px; outline:none; border-radius:15px; margin-right:10px;" oninput="handleSearch()">
             </div>
             <div class="library-content">
-                <!-- DROP ZONE LIBRARY -->
-                <div style="flex:1; overflow-y:auto; border-right:1px solid #333;" id="libraryList"
-                     ondragover="allowDrop(event)" 
-                     ondrop="dropOnLibrary(event)">
+                <!-- NEW: Separate containers for each tab -->
+                <!-- Songs Tab Container -->
+                <div class="library-list-container active" id="songListContainer">
+                    <div class="library-list" id="libraryListSong"
+                         ondragover="allowDrop(event)" 
+                         ondrop="dropOnLibrary(event)">
+                    </div>
+                </div>
+                
+                <!-- Scriptures Tab Container -->
+                <div class="library-list-container" id="scriptureListContainer">
+                    <div class="library-list" id="libraryListScripture"
+                         ondragover="allowDrop(event)" 
+                         ondrop="dropOnLibrary(event)">
+                    </div>
+                </div>
+                
+                <!-- Presentations Tab Container -->
+                <div class="library-list-container" id="presentationListContainer">
+                    <div class="library-list" id="libraryListPresentation"
+                         ondragover="allowDrop(event)" 
+                         ondrop="dropOnLibrary(event)">
+                    </div>
                 </div>
                 
                 <!-- FLOATING ADD BUTTON (Visible on Presentation Tab) -->
@@ -511,8 +563,11 @@
         let currentSlideIdx = -1;
         let liveState = { slide: null, item: null }; 
 
-        // SCRIPTURE SCROLLING STATE
-        let visibleScriptureCount = 500; // Increased default load for better UX
+        // SCRIPTURE SCROLLING STATE - Now separate for each tab
+        let visibleScriptureCount = { Song: 500, Scripture: 500, Presentation: 500 };
+        let rightClickedItem = null;
+        let isScriptureRendering = false;
+        let currentTabScrollPositions = { Song: 0, Scripture: 0, Presentation: 0 };
 
         // INIT
         function init() {
@@ -529,7 +584,11 @@
             
             // Bind Search
             document.getElementById('librarySearch').setAttribute('list', 'bibleBooks');
-            document.getElementById('libraryList').addEventListener('scroll', handleLibraryScroll);
+            
+            // Ensure scroll events are properly bound for each list
+            document.getElementById('libraryListSong').addEventListener('scroll', handleLibraryScroll);
+            document.getElementById('libraryListScripture').addEventListener('scroll', handleLibraryScroll);
+            document.getElementById('libraryListPresentation').addEventListener('scroll', handleLibraryScroll);
 
             setupEditorInteraction();
             setupKeyboardNav();
@@ -543,20 +602,17 @@
         
         // --- VERSION CHECK ---
         async function checkForUpdates() {
-            // Wait 3 seconds before checking to let the app load visibly first
             setTimeout(async () => {
                 try {
                     const response = await fetch(GITHUB_SOURCE_URL);
-                    if (!response.ok) return; // Silent fail
+                    if (!response.ok) return;
                     
                     const text = await response.text();
-                    // Extract version using regex
                     const match = text.match(/const\s+TOOL_VERSION\s+=\s+['"]([\d\.]+)['"];/);
                     
                     if (match && match[1]) {
                         const onlineVersion = match[1];
                         if (compareVersions(onlineVersion, TOOL_VERSION) > 0) {
-                            // Online version is newer
                             const banner = document.getElementById('updateBanner');
                             banner.style.display = 'block';
                         }
@@ -584,9 +640,9 @@
                 document.exitFullscreen();
             } else if (body.requestFullscreen) {
                 body.requestFullscreen();
-            } else if (body.webkitRequestFullscreen) { /* Safari */
+            } else if (body.webkitRequestFullscreen) {
                 body.webkitRequestFullscreen();
-            } else if (body.msRequestFullscreen) { /* IE11 */
+            } else if (body.msRequestFullscreen) {
                 body.msRequestFullscreen();
             }
         }
@@ -602,7 +658,6 @@
                 }
             }
         });
-
 
         // --- TOAST NOTIFICATION ---
         function showToast(message) {
@@ -718,7 +773,7 @@
                 projectorWindow.onload = () => { 
                     document.getElementById('projStatus').innerText = "LIVE"; 
                     document.getElementById('projStatus').style.color = "#4caf50"; 
-                    reRenderLive(); // Sync immediately
+                    reRenderLive();
                 };
                 
                 const timer = setInterval(() => {
@@ -756,15 +811,42 @@
             });
         }
 
-        // --- SCROLL LOGIC ---
+        // --- SCROLL LOGIC (now tab-specific) ---
         function handleLibraryScroll(e) {
-            if(currentTab !== 'Scripture') return;
-            const el = e.target;
-            if(el.scrollTop + el.clientHeight >= el.scrollHeight - 50) {
-                if (visibleScriptureCount < bibleLibrary.length) {
-                    visibleScriptureCount += 500; 
-                    const query = document.getElementById('librarySearch').value;
-                    renderScriptureList(query, true); 
+            const container = e.target;
+            const containerId = container.id;
+            
+            // Save scroll position for current tab
+            if (containerId === 'libraryListSong') {
+                currentTabScrollPositions.Song = container.scrollTop;
+            } else if (containerId === 'libraryListScripture') {
+                currentTabScrollPositions.Scripture = container.scrollTop;
+                handleScriptureScroll(container);
+            } else if (containerId === 'libraryListPresentation') {
+                currentTabScrollPositions.Presentation = container.scrollTop;
+            }
+        }
+        
+        function handleScriptureScroll(container) {
+            if (currentTab !== 'Scripture') return;
+            if (isScriptureRendering) return;
+            
+            const scrollThreshold = 100;
+            const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight <= scrollThreshold;
+            
+            if (isNearBottom) {
+                const query = document.getElementById('librarySearch').value;
+                const lowerQ = query.toLowerCase();
+                const filtered = bibleLibrary.filter(item => item.title.toLowerCase().includes(lowerQ));
+                
+                if (visibleScriptureCount.Scripture < filtered.length) {
+                    isScriptureRendering = true;
+                    visibleScriptureCount.Scripture += 500;
+                    
+                    setTimeout(() => {
+                        renderScriptureList(query, true);
+                        isScriptureRendering = false;
+                    }, 50);
                 }
             }
         }
@@ -772,23 +854,29 @@
         // --- SEARCH LOGIC ---
         function handleSearch() {
             const query = document.getElementById('librarySearch').value;
-            visibleScriptureCount = 500; 
             if (currentTab === 'Scripture') {
+                visibleScriptureCount.Scripture = 500;
                 renderScriptureList(query, false);
-            } else {
-                renderLibrary(); 
+            } else if (currentTab === 'Song') {
+                visibleScriptureCount.Song = 500;
+                renderLibrary(false);
+            } else if (currentTab === 'Presentation') {
+                visibleScriptureCount.Presentation = 500;
+                renderLibrary(false);
             }
         }
 
         function renderScriptureList(query, append = false) {
-            let c = document.getElementById('libraryList'); 
+            let container = document.getElementById('libraryListScripture');
             
             // Switch Preview Mode
             document.getElementById('libraryPreviewCanvas').style.display = 'none';
             document.getElementById('libraryPreviewText').style.display = 'block';
-            document.getElementById('libraryPreviewText').innerText = "Select a verse to view...";
             
-            if(!append) c.innerHTML="";
+            if (!append) {
+                container.innerHTML = "";
+                visibleScriptureCount.Scripture = 500;
+            }
             
             const rangeRegex = /^([1-3]?\s?[a-zA-Z]+)\s+(\d+):(\d+)-(\d+)$/;
             const match = query.match(rangeRegex);
@@ -826,56 +914,79 @@
                     div.onclick = () => {
                          const content = compositeItem.slides.map(s => `${s.verseReference}\n${s.layers[0].text}`).join('\n\n---\n\n');
                          document.getElementById('libraryPreviewText').innerText = content;
-                    }
-                    div.ondblclick = () => goLive(compositeItem.slides[0], compositeItem); // Double-click to go live
-                    c.appendChild(div);
+                    };
+                    div.ondblclick = () => goLive(compositeItem.slides[0], compositeItem);
+                    container.appendChild(div);
                 }
             }
 
             // --- 2. HANDLE SCROLLABLE LIST ---
-            let count = 0;
             const lowerQ = query.toLowerCase();
             let itemsToRender = []; 
 
-            for(let i=0; i<bibleLibrary.length; i++) {
+            for(let i = 0; i < bibleLibrary.length; i++) {
                 const item = bibleLibrary[i];
                 if(item.title.toLowerCase().includes(lowerQ)) {
                     itemsToRender.push(item);
                 }
             }
             
-            let startIndex = append ? c.childElementCount : 0;
-
-            for(let i=startIndex; i<itemsToRender.length; i++) {
-                if (count >= visibleScriptureCount) break;
-
+            // Calculate how many non-range items are currently shown
+            let existingScriptureItems = container.querySelectorAll('.schedule-item:not(.range-item)').length;
+            let startIndex = append ? existingScriptureItems : 0;
+            let endIndex = Math.min(visibleScriptureCount.Scripture, itemsToRender.length);
+            
+            for(let i = startIndex; i < endIndex; i++) {
                 const item = itemsToRender[i];
-
+                
+                // Check if item already exists (to avoid duplicates)
+                const existingItem = container.querySelector(`[data-id="${item.id}"]`);
+                if (existingItem) continue;
+                
                 let d = document.createElement('div'); 
-                d.className='schedule-item'; 
-                d.innerText=item.title; 
-                d.draggable=true;
+                d.className = 'schedule-item'; 
+                d.innerText = item.title; 
+                d.draggable = true;
+                d.setAttribute('data-id', item.id);
                 
                 d.onclick = (function(itemToPreview) {
                     return function() {
                         const content = `${itemToPreview.title}\n\n${itemToPreview.slides[0].layers[0].text}`;
                         document.getElementById('libraryPreviewText').innerText = content;
-                    }
+                    };
                 })(item);
 
                 d.ondblclick = (function(itemToLive) {
                     return function() {
-                        goLive(itemToLive.slides[0], itemToLive); // Double-click to go live
-                    }
+                        goLive(itemToLive.slides[0], itemToLive);
+                    };
                 })(item);
 
                 d.ondragstart = (e) => startDrag(e, 'library', -1, item); 
-                c.appendChild(d);
-                count++;
+                container.appendChild(d);
             }
             
-            if(bibleLibrary.length === 0 && !append) {
-                c.innerHTML = "<div style='padding:20px; color:#777;'>Bible not loaded. Go to File > Fetch Bible.</div>";
+            if (itemsToRender.length === 0 && !append) {
+                container.innerHTML = "<div style='padding:20px; color:#777;'>" + 
+                    (bibleLibrary.length === 0 ? 
+                        "Bible not loaded. Go to File > Fetch Bible." : 
+                        "No matching scriptures found.") + 
+                    "</div>";
+            }
+            
+            // Update preview text if nothing is selected
+            if (!append && container.querySelectorAll('.schedule-item').length > 0) {
+                const firstItem = container.querySelector('.schedule-item');
+                if (firstItem) firstItem.click();
+            } else if (container.querySelectorAll('.schedule-item').length === 0) {
+                document.getElementById('libraryPreviewText').innerText = "Select an item to preview text...";
+            }
+            
+            // Restore scroll position if we have one
+            if (currentTabScrollPositions.Scripture > 0 && !append) {
+                setTimeout(() => {
+                    container.scrollTop = currentTabScrollPositions.Scripture;
+                }, 10);
             }
         }
 
@@ -942,21 +1053,29 @@
         }
 
         function renderLibrary(append = false) {
-            if (currentTab === 'Scripture') { handleSearch(); return; }
+            if (currentTab === 'Scripture') { 
+                handleSearch(); 
+                return; 
+            }
             
             // Switch Preview Mode
             document.getElementById('libraryPreviewCanvas').style.display = 'block';
             document.getElementById('libraryPreviewText').style.display = 'none';
 
-            let c = document.getElementById('libraryList'); 
-            if(!append) c.innerHTML="";
+            let container = document.getElementById(`libraryList${currentTab}`); 
+            if(!append) container.innerHTML = "";
             
             document.getElementById('addPresBtn').style.display = (currentTab === 'Presentation') ? 'flex' : 'none';
 
             const q = document.getElementById('librarySearch').value.toLowerCase();
+            const filteredItems = library.filter(x => x.type === currentTab && x.title.toLowerCase().includes(q));
             
-            library.filter(x => x.type===currentTab && x.title.toLowerCase().includes(q)).forEach((item, i) => {
-                let d = document.createElement('div'); d.className='schedule-item'; d.innerText=item.title; d.draggable=true;
+            filteredItems.forEach((item, i) => {
+                let d = document.createElement('div'); 
+                d.className = 'schedule-item'; 
+                d.innerText = item.title; 
+                d.draggable = true;
+                d.setAttribute('data-id', item.id);
                 
                 d.onclick = () => {
                     const ctx = document.getElementById('libraryPreviewCanvas').getContext('2d');
@@ -964,18 +1083,48 @@
                     renderSlide(ctx, firstSlide, "Preview");
                 };
                 
-                d.ondblclick = () => goLive(item.slides[0], item); // Double-click to go live
+                d.ondblclick = () => goLive(item.slides[0], item);
                 d.oncontextmenu = e => showContextMenu(e, 'library', library.indexOf(item), item);
                 d.ondragstart = (e) => startDrag(e, 'library', i, item);
-                c.appendChild(d);
+                container.appendChild(d);
             });
+            
+            if (filteredItems.length === 0 && !append) {
+                container.innerHTML = `<div style='padding:20px; color:#777;'>No ${currentTab.toLowerCase()}s found.</div>`;
+            }
+            
+            // Restore scroll position if we have one
+            if (currentTabScrollPositions[currentTab] > 0 && !append) {
+                setTimeout(() => {
+                    container.scrollTop = currentTabScrollPositions[currentTab];
+                }, 10);
+            }
         }
 
         function switchTab(t) { 
-            currentTab=t; 
-            visibleScriptureCount = 500; 
-            document.getElementById('libraryList').scrollTop = 0; 
-            document.getElementById('librarySearch').value = ""; 
+            // Save current scroll position before switching
+            if (currentTab) {
+                const currentContainer = document.getElementById(`libraryList${currentTab}`);
+                if (currentContainer) {
+                    currentTabScrollPositions[currentTab] = currentContainer.scrollTop;
+                }
+            }
+            
+            currentTab = t; 
+            
+            // Hide all tab containers and show the active one
+            document.querySelectorAll('.library-list-container').forEach(container => {
+                container.classList.remove('active');
+            });
+            document.getElementById(`${t.toLowerCase()}ListContainer`).classList.add('active');
+            
+            // Reset scroll position for this tab if needed
+            setTimeout(() => {
+                const newContainer = document.getElementById(`libraryList${t}`);
+                if (newContainer && currentTabScrollPositions[t] > 0) {
+                    newContainer.scrollTop = currentTabScrollPositions[t];
+                }
+            }, 10);
             
             const searchInput = document.getElementById('librarySearch');
             if(t === 'Scripture') {
@@ -986,18 +1135,43 @@
                 searchInput.placeholder = "Search Library...";
             }
 
+            searchInput.value = "";  
+            
             const ctx = document.getElementById('libraryPreviewCanvas').getContext('2d');
             // Clear preview
             renderSlide(ctx, {layers:[{text:"Select Item", style:{fontSize:60}}]});
 
-            renderLibrary(); 
+            if (t === 'Scripture') {
+                renderScriptureList('', false);
+            } else {
+                renderLibrary(false);
+            }
+            
             document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.innerText.includes(t))); 
         }
 
         function loadToGrid(item, el) { 
             currentGridSlides = item.slides;
             currentSlideIdx = -1; 
-            document.querySelectorAll('.schedule-item').forEach(x => x.classList.remove('selected')); if(el) el.classList.add('selected'); let g = document.getElementById('slideGrid'); g.innerHTML = ""; item.slides.forEach((slide, index) => { let w = document.createElement('div'); w.className = 'slide-wrapper'; let cvs = document.createElement('canvas'); cvs.className = 'preview-canvas'; cvs.width = 1920; cvs.height = 1080; renderSlide(cvs.getContext('2d'), slide); w.onclick = () => { currentSlideIdx = index; goLive(slide, item, w); }; w.appendChild(cvs); g.appendChild(w); }); 
+            document.querySelectorAll('.schedule-item').forEach(x => x.classList.remove('selected')); 
+            if(el) el.classList.add('selected'); 
+            let g = document.getElementById('slideGrid'); 
+            g.innerHTML = ""; 
+            item.slides.forEach((slide, index) => { 
+                let w = document.createElement('div'); 
+                w.className = 'slide-wrapper'; 
+                let cvs = document.createElement('canvas'); 
+                cvs.className = 'preview-canvas'; 
+                cvs.width = 1920; 
+                cvs.height = 1080; 
+                renderSlide(cvs.getContext('2d'), slide); 
+                w.onclick = () => { 
+                    currentSlideIdx = index; 
+                    goLive(slide, item, w); 
+                }; 
+                w.appendChild(cvs); 
+                g.appendChild(w); 
+            }); 
         }
         
         function renderSlide(ctx, slideObj, footer="") { 
@@ -1010,18 +1184,152 @@
             const isPreview = ctx.canvas.id.includes('editor') || ctx.canvas.id.includes('library');
 
             if (!isPreview) {
-                if (isLogo && logoImage) { let scale = Math.min(RESOLUTION.width/logoImage.width, RESOLUTION.height/logoImage.height); let w = logoImage.width * scale, h = logoImage.height * scale; ctx.drawImage(logoImage, (RESOLUTION.width-w)/2, (RESOLUTION.height-h)/2, w, h); return; }
+                if (isLogo && logoImage) { 
+                    let scale = Math.min(RESOLUTION.width/logoImage.width, RESOLUTION.height/logoImage.height); 
+                    let w = logoImage.width * scale, h = logoImage.height * scale; 
+                    ctx.drawImage(logoImage, (RESOLUTION.width-w)/2, (RESOLUTION.height-h)/2, w, h); 
+                    return; 
+                }
                 if (isBlack) return;
             }
 
-            if (slideObj.bgImage && !isClear) { if (!slideObj._bgImgObj || slideObj._bgImgObj.src !== slideObj.bgImage) { slideObj._bgImgObj = new Image(); slideObj._bgImgObj.src = slideObj.bgImage; slideObj._bgImgObj.onload = () => { if(ctx.canvas.id.includes('editor')) renderEditorPreview(); }; } if (slideObj._bgImgObj.complete) { ctx.drawImage(slideObj._bgImgObj, 0, 0, RESOLUTION.width, RESOLUTION.height); } } 
+            if (slideObj.bgImage && !isClear) { 
+                if (!slideObj._bgImgObj || slideObj._bgImgObj.src !== slideObj.bgImage) { 
+                    slideObj._bgImgObj = new Image(); 
+                    slideObj._bgImgObj.src = slideObj.bgImage; 
+                    slideObj._bgImgObj.onload = () => { 
+                        if(ctx.canvas.id.includes('editor')) renderEditorPreview(); 
+                    }; 
+                } 
+                if (slideObj._bgImgObj.complete) { 
+                    ctx.drawImage(slideObj._bgImgObj, 0, 0, RESOLUTION.width, RESOLUTION.height); 
+                } 
+            } 
             
             if (isClear && !isPreview) return; 
             
-            slideObj.layers.forEach((layer, idx) => { const style = layer.style || {}; const text = layer.text || ""; if (ctx.canvas.id.includes('editor') && idx === selectedLayerIndex) { ctx.save(); ctx.strokeStyle = '#007acc'; ctx.lineWidth = 2; ctx.restore(); } const fontSize = parseInt(style.fontSize) || 90; const fontFace = style.font || "Segoe UI"; const fontWeight = style.bold ? "bold" : "normal"; const fontStyle = style.italic ? "italic" : "normal"; const color = style.color || "white"; const offX = parseInt(style.x || 0); const offY = parseInt(style.y || 0); ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px "${fontFace}"`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = "round"; ctx.miterLimit = 2; ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 4; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2; const maxWidth = RESOLUTION.width - 200; const words = text.split('\n').join(' [BR] ').split(' '); let lines = [], currentLine = words[0]; for (let i = 1; i < words.length; i++) { if (words[i] === '[BR]') { lines.push(currentLine); currentLine = ""; continue; } let w = ctx.measureText(currentLine + " " + words[i]).width; if (w < maxWidth) currentLine += (currentLine===""?"":" ") + words[i]; else { lines.push(currentLine); currentLine = words[i]; } } lines.push(currentLine); let lineHeight = fontSize * 1.2; let startY = (RESOLUTION.height - (lines.length * lineHeight)) / 2 + (lineHeight/2); let centerX = (RESOLUTION.width/2) + offX; let drawY = startY + offY; lines.forEach(line => { if(line){ ctx.strokeStyle = 'black'; ctx.lineWidth = fontSize * 0.04; ctx.strokeText(line, centerX, drawY); ctx.fillStyle = color; ctx.fillText(line, centerX, drawY); drawY += lineHeight; } }); }); 
-            if(footer && !isPreview) { ctx.font = 'bold 40px Arial'; ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.shadowBlur = 0; ctx.fillText(footer, RESOLUTION.width-50, RESOLUTION.height-50); } 
+            slideObj.layers.forEach((layer, idx) => { 
+                const style = layer.style || {}; 
+                const text = layer.text || ""; 
+                if (ctx.canvas.id.includes('editor') && idx === selectedLayerIndex) { 
+                    ctx.save(); 
+                    ctx.strokeStyle = '#007acc'; 
+                    ctx.lineWidth = 2; 
+                    ctx.restore(); 
+                } 
+                const fontSize = parseInt(style.fontSize) || 90; 
+                const fontFace = style.font || "Segoe UI"; 
+                const fontWeight = style.bold ? "bold" : "normal"; 
+                const fontStyle = style.italic ? "italic" : "normal"; 
+                const color = style.color || "white"; 
+                const offX = parseInt(style.x || 0); 
+                const offY = parseInt(style.y || 0); 
+                ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px "${fontFace}"`; 
+                ctx.textAlign = 'center'; 
+                ctx.textBaseline = 'middle'; 
+                ctx.lineJoin = "round"; 
+                ctx.miterLimit = 2; 
+                ctx.shadowColor = 'rgba(0,0,0,0.5)'; 
+                ctx.shadowBlur = 4; 
+                ctx.shadowOffsetX = 2; 
+                ctx.shadowOffsetY = 2; 
+                const maxWidth = RESOLUTION.width - 200; 
+                const words = text.split('\n').join(' [BR] ').split(' '); 
+                let lines = [], currentLine = words[0]; 
+                for (let i = 1; i < words.length; i++) { 
+                    if (words[i] === '[BR]') { 
+                        lines.push(currentLine); 
+                        currentLine = ""; 
+                        continue; 
+                    } 
+                    let w = ctx.measureText(currentLine + " " + words[i]).width; 
+                    if (w < maxWidth) currentLine += (currentLine===""?"":" ") + words[i]; 
+                    else { 
+                        lines.push(currentLine); 
+                        currentLine = words[i]; 
+                    } 
+                } 
+                lines.push(currentLine); 
+                let lineHeight = fontSize * 1.2; 
+                let startY = (RESOLUTION.height - (lines.length * lineHeight)) / 2 + (lineHeight/2); 
+                let centerX = (RESOLUTION.width/2) + offX; 
+                let drawY = startY + offY; 
+                lines.forEach(line => { 
+                    if(line){ 
+                        ctx.strokeStyle = 'black'; 
+                        ctx.lineWidth = fontSize * 0.04; 
+                        ctx.strokeText(line, centerX, drawY); 
+                        ctx.fillStyle = color; 
+                        ctx.fillText(line, centerX, drawY); 
+                        drawY += lineHeight; 
+                    } 
+                }); 
+            }); 
+            if(footer && !isPreview) { 
+                ctx.font = 'bold 40px Arial'; 
+                ctx.textAlign = 'right'; 
+                ctx.fillStyle = 'rgba(255,255,255,0.7)'; 
+                ctx.shadowBlur = 0; 
+                ctx.fillText(footer, RESOLUTION.width-50, RESOLUTION.height-50); 
+            } 
         }
-        function setupEditorInteraction() { const canvas = document.getElementById('editorCanvas'); let isDragging = false, lastMouseX, lastMouseY; canvas.addEventListener('mousedown', e => { const rect = canvas.getBoundingClientRect(); const scaleX = RESOLUTION.width / rect.width; const scaleY = RESOLUTION.height / rect.height; const mouseX = (e.clientX - rect.left) * scaleX; const mouseY = (e.clientY - rect.top) * scaleY; let clickedLayer = -1; let minDst = 1000; const slide = tempSlides[currentSlideIndex]; slide.layers.forEach((layer, idx) => { const lx = (RESOLUTION.width/2) + (parseInt(layer.style?.x)||0); const ly = (RESOLUTION.height/2) + (parseInt(layer.style?.y)||0); const dst = Math.sqrt(Math.pow(mouseX-lx,2) + Math.pow(mouseY-ly,2)); if (dst < 400 && dst < minDst) { minDst = dst; clickedLayer = idx; } }); if(clickedLayer !== -1) { selectedLayerIndex = clickedLayer; loadLayerToToolbar(); isDragging = true; lastMouseX = e.offsetX; lastMouseY = e.offsetY; canvas.style.cursor = 'grabbing'; } }); window.addEventListener('mousemove', e => { if (!isDragging) return; const rect = canvas.getBoundingClientRect(); const scaleX = RESOLUTION.width / rect.width; const scaleY = RESOLUTION.height / rect.height; const mouseX = e.clientX - rect.left; const mouseY = e.clientY - rect.top; const dx = (mouseX - lastMouseX) * scaleX; const dy = (mouseY - lastMouseY) * scaleY; let s = tempSlides[currentSlideIndex].layers[selectedLayerIndex].style; if(!s) s = {}; s.x = (parseInt(s.x) || 0) + dx; s.y = (parseInt(s.y) || 0) + dy; tempSlides[currentSlideIndex].layers[selectedLayerIndex].style = s; lastMouseX = mouseX; lastMouseY = mouseY; renderEditorPreview(); }); window.addEventListener('mouseup', () => { if(isDragging) { isDragging = false; canvas.style.cursor = 'default'; } }); }
+
+        function setupEditorInteraction() { 
+            const canvas = document.getElementById('editorCanvas'); 
+            let isDragging = false, lastMouseX, lastMouseY; 
+            canvas.addEventListener('mousedown', e => { 
+                const rect = canvas.getBoundingClientRect(); 
+                const scaleX = RESOLUTION.width / rect.width; 
+                const scaleY = RESOLUTION.height / rect.height; 
+                const mouseX = (e.clientX - rect.left) * scaleX; 
+                const mouseY = (e.clientY - rect.top) * scaleY; 
+                let clickedLayer = -1; 
+                let minDst = 1000; 
+                const slide = tempSlides[currentSlideIndex]; 
+                slide.layers.forEach((layer, idx) => { 
+                    const lx = (RESOLUTION.width/2) + (parseInt(layer.style?.x)||0); 
+                    const ly = (RESOLUTION.height/2) + (parseInt(layer.style?.y)||0); 
+                    const dst = Math.sqrt(Math.pow(mouseX-lx,2) + Math.pow(mouseY-ly,2)); 
+                    if (dst < 400 && dst < minDst) { 
+                        minDst = dst; 
+                        clickedLayer = idx; 
+                    } 
+                }); 
+                if(clickedLayer !== -1) { 
+                    selectedLayerIndex = clickedLayer; 
+                    loadLayerToToolbar(); 
+                    isDragging = true; 
+                    lastMouseX = e.offsetX; 
+                    lastMouseY = e.offsetY; 
+                    canvas.style.cursor = 'grabbing'; 
+                } 
+            }); 
+            window.addEventListener('mousemove', e => { 
+                if (!isDragging) return; 
+                const rect = canvas.getBoundingClientRect(); 
+                const scaleX = RESOLUTION.width / rect.width; 
+                const scaleY = RESOLUTION.height / rect.height; 
+                const mouseX = e.clientX - rect.left; 
+                const mouseY = e.clientY - rect.top; 
+                const dx = (mouseX - lastMouseX) * scaleX; 
+                const dy = (mouseY - lastMouseY) * scaleY; 
+                let s = tempSlides[currentSlideIndex].layers[selectedLayerIndex].style; 
+                if(!s) s = {}; 
+                s.x = (parseInt(s.x) || 0) + dx; 
+                s.y = (parseInt(s.y) || 0) + dy; 
+                tempSlides[currentSlideIndex].layers[selectedLayerIndex].style = s; 
+                lastMouseX = mouseX; 
+                lastMouseY = mouseY; 
+                renderEditorPreview(); 
+            }); 
+            window.addEventListener('mouseup', () => { 
+                if(isDragging) { 
+                    isDragging = false; 
+                    canvas.style.cursor = 'default'; 
+                } 
+            }); 
+        }
+
         function openEditor(itemIndex, context) { 
             let item = context === 'schedule' ? schedule[itemIndex] : library[itemIndex]; 
             editingItem = { context, index: itemIndex, ref: item }; 
@@ -1042,16 +1350,94 @@
             renderEditorSlideList(); 
             loadSlideToEditor(0); 
         }
-        function renderEditorSlideList() { const list = document.getElementById('editorSlideList'); list.innerHTML = ""; tempSlides.forEach((slide, i) => { let div = document.createElement('div'); div.className = `slide-thumb ${i === currentSlideIndex ? 'active' : ''}`; let txt = slide.layers[0]?.text || "Empty"; div.innerHTML = `<span class="thumb-num">${i+1}</span> <span style="font-size:0.8rem; overflow:hidden; white-space:nowrap;">${txt.substring(0,12)}...</span>`; div.onclick = () => loadSlideToEditor(i); list.appendChild(div); }); }
-        function loadSlideToEditor(index) { currentSlideIndex = index; selectedLayerIndex = 0; renderEditorSlideList(); loadLayerToToolbar(); renderEditorPreview(); }
-        function loadLayerToToolbar() { const slide = tempSlides[currentSlideIndex]; if(slide.layers.length === 0) { document.getElementById('editorTextArea').value = ""; document.getElementById('editorTextArea').disabled = true; return; } document.getElementById('editorTextArea').disabled = false; if(selectedLayerIndex >= slide.layers.length) selectedLayerIndex = 0; const layer = slide.layers[selectedLayerIndex]; if(!layer.style) layer.style = {}; document.getElementById('toolFont').value = layer.style.font || "Segoe UI"; document.getElementById('toolSize').value = layer.style.fontSize || 90; document.getElementById('toolColor').value = layer.style.color || "#ffffff"; document.getElementById('editorTextArea').value = layer.text; document.getElementById('editorTextArea').focus(); }
-        function addTextBlock() { tempSlides[currentSlideIndex].layers.push({ text: "New Block", style: { fontSize: 60, y: 100 } }); selectedLayerIndex = tempSlides[currentSlideIndex].layers.length - 1; loadLayerToToolbar(); renderEditorPreview(); }
-        function removeCurrentBlock() { const slide = tempSlides[currentSlideIndex]; if(slide.layers.length <= 1) { alert("Slide must have at least one block."); return; } slide.layers.splice(selectedLayerIndex, 1); selectedLayerIndex = 0; loadLayerToToolbar(); renderEditorPreview(); }
-        function updateCurrentBlockText() { tempSlides[currentSlideIndex].layers[selectedLayerIndex].text = document.getElementById('editorTextArea').value; renderEditorSlideList(); renderEditorPreview(); }
-        function updateCurrentBlockStyle() { let s = tempSlides[currentSlideIndex].layers[selectedLayerIndex].style; s.font = document.getElementById('toolFont').value; s.fontSize = parseInt(document.getElementById('toolSize').value); s.color = document.getElementById('toolColor').value; renderEditorPreview(); }
-        function toggleStyle(prop) { let s = tempSlides[currentSlideIndex].layers[selectedLayerIndex].style; s[prop] = !s[prop]; renderEditorPreview(); }
-        function renderEditorPreview() { renderSlide(document.getElementById('editorCanvas').getContext('2d'), tempSlides[currentSlideIndex]); }
-        function addNewSlide() { tempSlides.push({layers:[{text:"New Slide", style:{}}]}); loadSlideToEditor(tempSlides.length - 1); }
+
+        function renderEditorSlideList() { 
+            const list = document.getElementById('editorSlideList'); 
+            list.innerHTML = ""; 
+            tempSlides.forEach((slide, i) => { 
+                let div = document.createElement('div'); 
+                div.className = `slide-thumb ${i === currentSlideIndex ? 'active' : ''}`; 
+                let txt = slide.layers[0]?.text || "Empty"; 
+                div.innerHTML = `<span class="thumb-num">${i+1}</span> <span style="font-size:0.8rem; overflow:hidden; white-space:nowrap;">${txt.substring(0,12)}...</span>`; 
+                div.onclick = () => loadSlideToEditor(i); 
+                list.appendChild(div); 
+            }); 
+        }
+
+        function loadSlideToEditor(index) { 
+            currentSlideIndex = index; 
+            selectedLayerIndex = 0; 
+            renderEditorSlideList(); 
+            loadLayerToToolbar(); 
+            renderEditorPreview(); 
+        }
+
+        function loadLayerToToolbar() { 
+            const slide = tempSlides[currentSlideIndex]; 
+            if(slide.layers.length === 0) { 
+                document.getElementById('editorTextArea').value = ""; 
+                document.getElementById('editorTextArea').disabled = true; 
+                return; 
+            } 
+            document.getElementById('editorTextArea').disabled = false; 
+            if(selectedLayerIndex >= slide.layers.length) selectedLayerIndex = 0; 
+            const layer = slide.layers[selectedLayerIndex]; 
+            if(!layer.style) layer.style = {}; 
+            document.getElementById('toolFont').value = layer.style.font || "Segoe UI"; 
+            document.getElementById('toolSize').value = layer.style.fontSize || 90; 
+            document.getElementById('toolColor').value = layer.style.color || "#ffffff"; 
+            document.getElementById('editorTextArea').value = layer.text; 
+            document.getElementById('editorTextArea').focus(); 
+        }
+
+        function addTextBlock() { 
+            tempSlides[currentSlideIndex].layers.push({ text: "New Block", style: { fontSize: 60, y: 100 } }); 
+            selectedLayerIndex = tempSlides[currentSlideIndex].layers.length - 1; 
+            loadLayerToToolbar(); 
+            renderEditorPreview(); 
+        }
+
+        function removeCurrentBlock() { 
+            const slide = tempSlides[currentSlideIndex]; 
+            if(slide.layers.length <= 1) { 
+                alert("Slide must have at least one block."); 
+                return; 
+            } 
+            slide.layers.splice(selectedLayerIndex, 1); 
+            selectedLayerIndex = 0; 
+            loadLayerToToolbar(); 
+            renderEditorPreview(); 
+        }
+
+        function updateCurrentBlockText() { 
+            tempSlides[currentSlideIndex].layers[selectedLayerIndex].text = document.getElementById('editorTextArea').value; 
+            renderEditorSlideList(); 
+            renderEditorPreview(); 
+        }
+
+        function updateCurrentBlockStyle() { 
+            let s = tempSlides[currentSlideIndex].layers[selectedLayerIndex].style; 
+            s.font = document.getElementById('toolFont').value; 
+            s.fontSize = parseInt(document.getElementById('toolSize').value); 
+            s.color = document.getElementById('toolColor').value; 
+            renderEditorPreview(); 
+        }
+
+        function toggleStyle(prop) { 
+            let s = tempSlides[currentSlideIndex].layers[selectedLayerIndex].style; 
+            s[prop] = !s[prop]; 
+            renderEditorPreview(); 
+        }
+
+        function renderEditorPreview() { 
+            renderSlide(document.getElementById('editorCanvas').getContext('2d'), tempSlides[currentSlideIndex]); 
+        }
+
+        function addNewSlide() { 
+            tempSlides.push({layers:[{text:"New Slide", style:{}}]}); 
+            loadSlideToEditor(tempSlides.length - 1); 
+        }
+
         function saveEditorChanges() { 
             const newTitle = document.getElementById('editItemTitle').value.trim();
             if (newTitle) editingItem.ref.title = newTitle;
@@ -1061,9 +1447,27 @@
             document.getElementById('editorModal').style.display = 'none'; 
             showToast(`Item "${editingItem.ref.title}" updated.`);
         }
-        function closeEditor() { document.getElementById('editorModal').style.display = 'none'; }
-        function uploadSlideBG(input) { if(input.files && input.files[0]){ let r = new FileReader(); r.onload = e => { tempSlides[currentSlideIndex].bgImage = e.target.result; renderEditorPreview(); }; r.readAsDataURL(input.files[0]); } }
-        function clearSlideBG() { delete tempSlides[currentSlideIndex].bgImage; renderEditorPreview(); }
+
+        function closeEditor() { 
+            document.getElementById('editorModal').style.display = 'none'; 
+        }
+
+        function uploadSlideBG(input) { 
+            if(input.files && input.files[0]){ 
+                let r = new FileReader(); 
+                r.onload = e => { 
+                    tempSlides[currentSlideIndex].bgImage = e.target.result; 
+                    renderEditorPreview(); 
+                }; 
+                r.readAsDataURL(input.files[0]); 
+            } 
+        }
+
+        function clearSlideBG() { 
+            delete tempSlides[currentSlideIndex].bgImage; 
+            renderEditorPreview(); 
+        }
+
         function createNewPresentation() { 
             let newItem = { 
                 id: Date.now(), 
@@ -1075,13 +1479,163 @@
             renderLibrary(); 
             openEditor(library.length - 1, 'library'); 
         }
-        function fetchGoogleFont() { const nameInput = document.getElementById('googleFontName'); const name = nameInput.value.trim(); const status = document.getElementById('fontStatus'); if(!name) return; status.innerText = "Fetching..."; status.style.color = "#bbb"; const link = document.createElement('link'); link.href = `https://fonts.googleapis.com/css?family=${name.replace(/ /g, '+')}&display=swap`; link.rel = 'stylesheet'; link.onload = () => { addFontOption(name); status.innerText = `Success! "${name}" added.`; status.style.color = "#4caf50"; nameInput.value = ""; renderFontList(); setTimeout(() => { document.getElementById('fontManager').style.display = 'none'; status.innerText = ""; }, 1000); }; link.onerror = () => { status.innerText = `Error: Font "${name}" not found.`; status.style.color = "#d32f2f"; }; document.head.appendChild(link); }
-        function uploadLocalFont(input) { if(input.files && input.files[0]) { const status = document.getElementById('fontStatus'); status.innerText = "Loading file..."; status.style.color = "#bbb"; const file = input.files[0]; const reader = new FileReader(); reader.onload = (e) => { const fontName = file.name.split('.')[0]; const fontFace = new FontFace(fontName, e.target.result); fontFace.load().then(loadedFace => { document.fonts.add(loadedFace); addFontOption(fontName); status.innerText = `Success! "${fontName}" loaded.`; status.style.color = "#4caf50"; input.value = ""; renderFontList(); setTimeout(() => { document.getElementById('fontManager').style.display = 'none'; status.innerText = ""; }, 1000); }).catch(err => { status.innerText = "Failed to load font file."; status.style.color = "#d32f2f"; }); }; reader.readAsArrayBuffer(file); } }
-        function addFontOption(name) { if(!availableFonts.includes(name)) { availableFonts.push(name); const select = document.getElementById('toolFont'); if(select) { let exists = false; for(let i=0; i<select.options.length; i++) { if(select.options[i].value === name) { exists = true; break; } } if(!exists) { const opt = document.createElement('option'); opt.value = name; opt.innerText = name; select.appendChild(opt); } } } }
-        function renderFontList() { const list = document.getElementById('installedFontsList'); list.innerHTML = ""; availableFonts.forEach(font => { const div = document.createElement('div'); div.className = 'font-list-item'; div.innerText = font; div.style.fontFamily = font; list.appendChild(div); }); }
-        function compressImage(base64Str) { return new Promise((resolve) => { const img = new Image(); img.src = base64Str; img.onload = () => { const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); canvas.width = 1920; canvas.height = 1080; ctx.drawImage(img, 0, 0, 1920, 1080); resolve(canvas.toDataURL('image/jpeg', 0.8)); }; img.onerror = () => resolve(null); }); }
-        async function saveSchedule() { if(schedule.length === 0) { showToast("Schedule is empty!"); return; } document.body.style.cursor = 'wait'; let exportData = JSON.parse(JSON.stringify(schedule)); for (let item of exportData) { for (let slide of item.slides) { if (slide.bgImage) { const compressed = await compressImage(slide.bgImage); if (compressed) slide.bgImage = compressed; } } } const blob = new Blob([JSON.stringify(exportData)], {type: "application/json"}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `Service_${new Date().toISOString().slice(0,10)}.schedule`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); document.body.style.cursor = 'default'; showToast("Schedule Saved!"); }
-        function handleScheduleLoad(input) { if (input.files[0]) { let r = new FileReader(); r.onload = e => { try { let data = JSON.parse(e.target.result); if(Array.isArray(data)) { schedule = data; renderSchedule(); showToast("Schedule Loaded Successfully!"); } else { showToast("Invalid Schedule File"); } } catch(err) { showToast("Error parsing schedule file."); } }; r.readAsText(input.files[0]); } }
+
+        function fetchGoogleFont() { 
+            const nameInput = document.getElementById('googleFontName'); 
+            const name = nameInput.value.trim(); 
+            const status = document.getElementById('fontStatus'); 
+            if(!name) return; 
+            status.innerText = "Fetching..."; 
+            status.style.color = "#bbb"; 
+            const link = document.createElement('link'); 
+            link.href = `https://fonts.googleapis.com/css?family=${name.replace(/ /g, '+')}&display=swap`; 
+            link.rel = 'stylesheet'; 
+            link.onload = () => { 
+                addFontOption(name); 
+                status.innerText = `Success! "${name}" added.`; 
+                status.style.color = "#4caf50"; 
+                nameInput.value = ""; 
+                renderFontList(); 
+                setTimeout(() => { 
+                    document.getElementById('fontManager').style.display = 'none'; 
+                    status.innerText = ""; 
+                }, 1000); 
+            }; 
+            link.onerror = () => { 
+                status.innerText = `Error: Font "${name}" not found.`; 
+                status.style.color = "#d32f2f"; 
+            }; 
+            document.head.appendChild(link); 
+        }
+
+        function uploadLocalFont(input) { 
+            if(input.files && input.files[0]) { 
+                const status = document.getElementById('fontStatus'); 
+                status.innerText = "Loading file..."; 
+                status.style.color = "#bbb"; 
+                const file = input.files[0]; 
+                const reader = new FileReader(); 
+                reader.onload = (e) => { 
+                    const fontName = file.name.split('.')[0]; 
+                    const fontFace = new FontFace(fontName, e.target.result); 
+                    fontFace.load().then(loadedFace => { 
+                        document.fonts.add(loadedFace); 
+                        addFontOption(fontName); 
+                        status.innerText = `Success! "${fontName}" loaded.`; 
+                        status.style.color = "#4caf50"; 
+                        input.value = ""; 
+                        renderFontList(); 
+                        setTimeout(() => { 
+                            document.getElementById('fontManager').style.display = 'none'; 
+                            status.innerText = ""; 
+                        }, 1000); 
+                    }).catch(err => { 
+                        status.innerText = "Failed to load font file."; 
+                        status.style.color = "#d32f2f"; 
+                    }); 
+                }; 
+                reader.readAsArrayBuffer(file); 
+            } 
+        }
+
+        function addFontOption(name) { 
+            if(!availableFonts.includes(name)) { 
+                availableFonts.push(name); 
+                const select = document.getElementById('toolFont'); 
+                if(select) { 
+                    let exists = false; 
+                    for(let i=0; i<select.options.length; i++) { 
+                        if(select.options[i].value === name) { 
+                            exists = true; 
+                            break; 
+                        } 
+                    } 
+                    if(!exists) { 
+                        const opt = document.createElement('option'); 
+                        opt.value = name; 
+                        opt.innerText = name; 
+                        select.appendChild(opt); 
+                    } 
+                } 
+            } 
+        }
+
+        function renderFontList() { 
+            const list = document.getElementById('installedFontsList'); 
+            list.innerHTML = ""; 
+            availableFonts.forEach(font => { 
+                const div = document.createElement('div'); 
+                div.className = 'font-list-item'; 
+                div.innerText = font; 
+                div.style.fontFamily = font; 
+                list.appendChild(div); 
+            }); 
+        }
+
+        function compressImage(base64Str) { 
+            return new Promise((resolve) => { 
+                const img = new Image(); 
+                img.src = base64Str; 
+                img.onload = () => { 
+                    const canvas = document.createElement('canvas'); 
+                    const ctx = canvas.getContext('2d'); 
+                    canvas.width = 1920; 
+                    canvas.height = 1080; 
+                    ctx.drawImage(img, 0, 0, 1920, 1080); 
+                    resolve(canvas.toDataURL('image/jpeg', 0.8)); 
+                }; 
+                img.onerror = () => resolve(null); 
+            }); 
+        }
+
+        async function saveSchedule() { 
+            if(schedule.length === 0) { 
+                showToast("Schedule is empty!"); 
+                return; 
+            } 
+            document.body.style.cursor = 'wait'; 
+            let exportData = JSON.parse(JSON.stringify(schedule)); 
+            for (let item of exportData) { 
+                for (let slide of item.slides) { 
+                    if (slide.bgImage) { 
+                        const compressed = await compressImage(slide.bgImage); 
+                        if (compressed) slide.bgImage = compressed; 
+                    } 
+                } 
+            } 
+            const blob = new Blob([JSON.stringify(exportData)], {type: "application/json"}); 
+            const url = URL.createObjectURL(blob); 
+            const a = document.createElement('a'); 
+            a.href = url; 
+            a.download = `Service_${new Date().toISOString().slice(0,10)}.schedule`; 
+            document.body.appendChild(a); 
+            a.click(); 
+            document.body.removeChild(a); 
+            URL.revokeObjectURL(url); 
+            document.body.style.cursor = 'default'; 
+            showToast("Schedule Saved!"); 
+        }
+
+        function handleScheduleLoad(input) { 
+            if (input.files[0]) { 
+                let r = new FileReader(); 
+                r.onload = e => { 
+                    try { 
+                        let data = JSON.parse(e.target.result); 
+                        if(Array.isArray(data)) { 
+                            schedule = data; 
+                            renderSchedule(); 
+                            showToast("Schedule Loaded Successfully!"); 
+                        } else { 
+                            showToast("Invalid Schedule File"); 
+                        } 
+                    } catch(err) { 
+                        showToast("Error parsing schedule file."); 
+                    } 
+                }; 
+                r.readAsText(input.files[0]); 
+            } 
+        }
         
         function handleContentLoad(input) {
             const file = input.files[0];
@@ -1149,13 +1703,29 @@
                 if (sourceIndex !== -1) openEditor(sourceIndex, context);
             };
         }
-        document.getElementById('ctxRemove').onclick = () => { if (rightClickedItem.context === 'schedule') { schedule.splice(rightClickedItem.index, 1); renderSchedule(); } else if (rightClickedItem.context === 'library') { library.splice(rightClickedItem.index, 1); renderLibrary(); } document.getElementById('contextMenu').style.display = 'none'; };
+
+        document.getElementById('ctxRemove').onclick = () => { 
+            if (rightClickedItem.context === 'schedule') { 
+                schedule.splice(rightClickedItem.index, 1); 
+                renderSchedule(); 
+            } else if (rightClickedItem.context === 'library') { 
+                library.splice(rightClickedItem.index, 1); 
+                renderLibrary(); 
+            } 
+            document.getElementById('contextMenu').style.display = 'none'; 
+        };
+
         document.getElementById('ctxEdit').onclick = () => { 
              let idx = rightClickedItem.index; 
              if(rightClickedItem.context === 'library') idx = library.findIndex(i => i.id === rightClickedItem.item.id);
              openEditor(idx, rightClickedItem.context); 
         };
-        function openFontManager() { document.getElementById('fontManager').style.display='flex'; document.getElementById('fontStatus').innerText=''; renderFontList(); }
+
+        function openFontManager() { 
+            document.getElementById('fontManager').style.display='flex'; 
+            document.getElementById('fontStatus').innerText=''; 
+            renderFontList(); 
+        }
         
         function processFetchedData(data, fileName, extension, type) {
             const temp = JSON.stringify(data);
