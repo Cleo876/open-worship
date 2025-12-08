@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenWorship v2.3.20</title>
+    <title>OpenWorship v2.5.0</title>
     <script>
-        const TOOL_VERSION = '2.3.20';
+        const TOOL_VERSION = '2.5.0';
         const GITHUB_SOURCE_URL = 'https://raw.githubusercontent.com/Cleo876/open-worship/refs/heads/main/Open-Worship.html';
         const DOWNLOAD_PAGE_URL = 'https://cleo876.github.io/open-worship/';
     </script>
@@ -251,6 +251,110 @@
         }
         .font-list-item:last-child { border-bottom: none; }
 
+        /* SCRIPTURE SETTINGS MODAL */
+        .scripture-modal-content {
+            width: 800px;
+            background: #222;
+            border: 1px solid #444;
+            padding: 20px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .scripture-preview-container {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .scripture-controls {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .scripture-preview {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .control-group label {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        
+        .control-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .control-row input[type="number"] {
+            width: 80px;
+            padding: 6px;
+            background: #111;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 4px;
+        }
+        
+        .control-row select {
+            flex: 1;
+            padding: 6px;
+            background: #111;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 4px;
+        }
+        
+        .control-row button {
+            padding: 6px 12px;
+            height: auto;
+        }
+        
+        .size-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        
+        .size-option {
+            padding: 4px 8px;
+            background: #333;
+            border: 1px solid #444;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .size-option:hover {
+            background: #444;
+        }
+        
+        .size-option.active {
+            background: var(--accent);
+            border-color: #005f9e;
+        }
+        
+        canvas.scripture-preview-canvas {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: black;
+            border: 1px solid #333;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
         /* RANGE ITEM */
         .range-item { background: #0d2b3e; border-left: 3px solid #007acc; color: #fff; font-weight: bold; }
         .range-item:hover { background: #163d55; }
@@ -325,6 +429,34 @@
         }
         .close-update:hover { color: white; }
 
+        /* SAVE PRESENTATION DIALOG */
+        .save-dialog {
+            background: #222;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 20px;
+            min-width: 400px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
+        
+        .save-dialog h3 {
+            margin-top: 0;
+            color: #eee;
+        }
+        
+        .save-dialog p {
+            color: #ccc;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        
+        .dialog-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
         @-webkit-keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
         @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
         @-webkit-keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
@@ -348,6 +480,9 @@
                 <div onclick="saveSchedule()">Save Schedule...</div>
                 <div onclick="document.getElementById('scheduleInput').click()">Open Schedule...</div>
                 <div class="separator"></div>
+                <div onclick="exportPresentations()">Export Presentations...</div>
+                <div onclick="document.getElementById('presentationInput').click()">Import Presentations...</div>
+                <div class="separator"></div>
                 <div onclick="location.reload()">Exit</div>
             </div>
         </div>
@@ -357,8 +492,14 @@
                 <div onclick="openFontManager()">Manage Fonts...</div>
             </div>
         </div>
-        <div class="menu-item">Window <div class="dropdown"><div onclick="openProjector()">Open Projector</div></div></div>
-        <div style="margin-left:auto; color:#666; font-weight:bold;"><span id="version-display">v2.3.20</span></div>
+        <div class="menu-item">Window
+            <div class="dropdown">
+                <div onclick="openProjector()">Open Projector</div>
+                <div class="separator"></div>
+                <div onclick="openScriptureSettings()">Scripture Display Settings</div>
+            </div>
+        </div>
+        <div style="margin-left:auto; color:#666; font-weight:bold;"><span id="version-display">v2.5.0</span></div>
         <button id="btnFullscreen" onclick="toggleAppFullscreen()" class="btn-toggle-fullscreen" title="Toggle Fullscreen Mode">
              &#x26F6;
         </button>
@@ -515,6 +656,64 @@
         </div>
     </div>
 
+    <!-- SCRIPTURE SETTINGS MODAL -->
+    <div class="modal-overlay" id="scriptureSettingsModal">
+        <div class="scripture-modal-content">
+            <h3 style="margin-top:0; color:#eee;">Scripture Display Settings</h3>
+            <div class="scripture-preview-container">
+                <div class="scripture-controls">
+                    <div class="control-group">
+                        <label>Scripture Text Font</label>
+                        <div class="control-row">
+                            <select id="scriptureFontSelect"></select>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Scripture Text Size</label>
+                        <div class="control-row">
+                            <input type="number" id="scriptureSizeInput" min="20" max="200" value="90">
+                            <button onclick="addScriptureSize()">Add Size</button>
+                        </div>
+                        <div class="size-options" id="scriptureSizeOptions"></div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Reference Footer Size</label>
+                        <div class="control-row">
+                            <input type="number" id="footerSizeInput" min="20" max="100" value="40">
+                            <button onclick="addFooterSize()">Add Size</button>
+                        </div>
+                        <div class="size-options" id="footerSizeOptions"></div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Test Scripture</label>
+                        <div class="control-row">
+                            <select id="testScriptureSelect">
+                                <option value="John 3:16">John 3:16 - For God so loved...</option>
+                                <option value="Psalm 23:1">Psalm 23:1 - The Lord is my shepherd...</option>
+                                <option value="Matthew 28:19">Matthew 28:19 - Go therefore and make disciples...</option>
+                                <option value="Romans 8:28">Romans 8:28 - And we know that all things...</option>
+                            </select>
+                            <button onclick="updateScripturePreview()">Update Preview</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="scripture-preview">
+                    <canvas id="scripturePreviewCanvas" class="scripture-preview-canvas" width="1920" height="1080"></canvas>
+                </div>
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button onclick="resetScriptureSettings()">Reset to Default</button>
+                <button onclick="document.getElementById('scriptureSettingsModal').style.display='none'">Cancel</button>
+                <button class="live-btn" onclick="saveScriptureSettings()">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
     <!-- SAVE ALERT MODAL -->
     <div class="modal-overlay" id="saveAlertModal">
         <div class="modal">
@@ -524,9 +723,24 @@
         </div>
     </div>
 
+    <!-- SAVE PRESENTATION DIALOG -->
+    <div class="modal-overlay" id="savePresentationDialog">
+        <div class="save-dialog">
+            <h3>Save Presentations?</h3>
+            <p>You have created or modified presentations. Would you like to save them to your computer before exiting?</p>
+            <p style="color: #ff9800; font-size: 0.9rem;"><strong>Note:</strong> Presentations are automatically saved in your browser's storage, but exporting to a file ensures you can restore them on any computer.</p>
+            <div class="dialog-buttons">
+                <button onclick="document.getElementById('savePresentationDialog').style.display='none'">Don't Save</button>
+                <button onclick="exportPresentations()" class="live-btn">Save Presentations</button>
+                <button onclick="savePresentationsToStorage(); document.getElementById('savePresentationDialog').style.display='none'">Just Save to Browser</button>
+            </div>
+        </div>
+    </div>
+
     <input type="file" id="logoInput" style="display:none" accept="image/*" onchange="handleLogoUpload(this)">
     <input type="file" id="contentInput" accept=".json,.bible,.hymn" style="display:none" onchange="handleContentLoad(this)">
     <input type="file" id="scheduleInput" style="display:none" accept=".schedule,.json" onchange="handleScheduleLoad(this)">
+    <input type="file" id="presentationInput" style="display:none" accept=".json" onchange="handlePresentationLoad(this)">
     
     <div id="contextMenu" class="dropdown" style="position:absolute;">
         <div id="ctxEdit">Edit Item</div>
@@ -535,9 +749,12 @@
     </div>
 
     <script>
-        // REMINDER: Use 3-digit semantic versioning (Major.Minor.Patch) for this project (e.g., v2.3.16).
+        // REMINDER: Use 3-digit semantic versioning (Major.Minor.Patch) for this project (e.g., v2.5.0).
         // GLOBAL DATA
         const RESOLUTION = { width: 1920, height: 1080 };
+        const STORAGE_KEY = 'openworship_presentations_v2';
+        const SCRIPTURE_SETTINGS_KEY = 'openworship_scripture_settings';
+        const FONT_SIZES_KEY = 'openworship_font_sizes';
         
         let library = [
             { id: 1, title: "Way Maker", type: "Song", slides: [ {layers:[{text:"You are here\nMoving in our midst", style:{fontSize:90}}]}, {layers:[{text:"Way maker, miracle worker", style:{fontSize:90}}]} ] },
@@ -569,8 +786,50 @@
         let isScriptureRendering = false;
         let currentTabScrollPositions = { Song: 0, Scripture: 0, Presentation: 0 };
 
+        // PRESENTATION PERSISTENCE STATE
+        let presentationsModified = false;
+
+        // FONT SYNCHRONIZATION FOR PROJECTOR
+        let localFontData = {}; // Store local font data URLs for projector synchronization
+
+        // SCRIPTURE DISPLAY SETTINGS
+        let scriptureSettings = {
+            font: "Segoe UI",
+            scriptureSize: 90,
+            footerSize: 40,
+            bold: false,
+            italic: false,
+            color: "#ffffff"
+        };
+
+        // FONT SIZE MEMORY
+        let customFontSizes = {
+            scriptureSizes: [40, 60, 90, 120, 150, 200],
+            footerSizes: [30, 40, 50, 60],
+            editorSizes: [40, 60, 90, 120, 150, 200]
+        };
+
+        // HELPER FUNCTION: Convert ArrayBuffer to Base64
+        function arrayBufferToBase64(buffer) {
+            let binary = '';
+            let bytes = new Uint8Array(buffer);
+            for (let i = 0; i < bytes.length; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return window.btoa(binary);
+        }
+
         // INIT
         function init() {
+            // Load saved presentations from localStorage
+            loadPresentationsFromStorage();
+            
+            // Load scripture settings
+            loadScriptureSettings();
+            
+            // Load custom font sizes
+            loadCustomFontSizes();
+            
             renderSchedule();
             switchTab('Song');
             renderSlide(document.getElementById('monitorCanvas').getContext('2d'), null);
@@ -598,6 +857,447 @@
 
             // Start version check
             checkForUpdates();
+            
+            // Add beforeunload event to prompt for saving presentations
+            window.addEventListener('beforeunload', (e) => {
+                if (presentationsModified) {
+                    // Check if there are any presentations
+                    const presentations = library.filter(item => item.type === 'Presentation');
+                    if (presentations.length > 0) {
+                        e.preventDefault();
+                        e.returnValue = 'You have unsaved presentations. Would you like to save them before leaving?';
+                        showSavePresentationDialog();
+                        return e.returnValue;
+                    }
+                }
+            });
+        }
+        
+        // --- SCRIPTURE SETTINGS FUNCTIONS ---
+        function loadScriptureSettings() {
+            try {
+                const saved = localStorage.getItem(SCRIPTURE_SETTINGS_KEY);
+                if (saved) {
+                    const settings = JSON.parse(saved);
+                    scriptureSettings = { ...scriptureSettings, ...settings };
+                }
+            } catch (error) {
+                console.error('Error loading scripture settings:', error);
+            }
+        }
+        
+        function saveScriptureSettings() {
+            try {
+                localStorage.setItem(SCRIPTURE_SETTINGS_KEY, JSON.stringify(scriptureSettings));
+                showToast('Scripture display settings saved!');
+                document.getElementById('scriptureSettingsModal').style.display = 'none';
+                
+                // Update any live scripture display
+                if (liveState.item && liveState.item.type === 'Scripture') {
+                    reRenderLive();
+                }
+            } catch (error) {
+                console.error('Error saving scripture settings:', error);
+                showToast('Error saving scripture settings');
+            }
+        }
+        
+        function openScriptureSettings() {
+            const modal = document.getElementById('scriptureSettingsModal');
+            modal.style.display = 'flex';
+            
+            // Populate font select
+            const fontSelect = document.getElementById('scriptureFontSelect');
+            fontSelect.innerHTML = '';
+            availableFonts.forEach(font => {
+                const option = document.createElement('option');
+                option.value = font;
+                option.textContent = font;
+                if (font === scriptureSettings.font) option.selected = true;
+                fontSelect.appendChild(option);
+            });
+            
+            // Set current values
+            document.getElementById('scriptureSizeInput').value = scriptureSettings.scriptureSize;
+            document.getElementById('footerSizeInput').value = scriptureSettings.footerSize;
+            
+            // Populate size options
+            updateSizeOptions();
+            
+            // Update preview
+            updateScripturePreview();
+            
+            // Add event listeners for real-time preview
+            fontSelect.addEventListener('change', updateScripturePreview);
+            document.getElementById('scriptureSizeInput').addEventListener('input', updateScripturePreview);
+            document.getElementById('footerSizeInput').addEventListener('input', updateScripturePreview);
+            document.getElementById('testScriptureSelect').addEventListener('change', updateScripturePreview);
+        }
+        
+        function updateSizeOptions() {
+            // Update scripture size options
+            const scriptureSizeOptions = document.getElementById('scriptureSizeOptions');
+            scriptureSizeOptions.innerHTML = '';
+            customFontSizes.scriptureSizes.forEach(size => {
+                const div = document.createElement('div');
+                div.className = `size-option ${size === scriptureSettings.scriptureSize ? 'active' : ''}`;
+                div.textContent = size;
+                div.onclick = () => {
+                    scriptureSettings.scriptureSize = size;
+                    document.getElementById('scriptureSizeInput').value = size;
+                    updateScripturePreview();
+                    updateSizeOptions();
+                };
+                scriptureSizeOptions.appendChild(div);
+            });
+            
+            // Update footer size options
+            const footerSizeOptions = document.getElementById('footerSizeOptions');
+            footerSizeOptions.innerHTML = '';
+            customFontSizes.footerSizes.forEach(size => {
+                const div = document.createElement('div');
+                div.className = `size-option ${size === scriptureSettings.footerSize ? 'active' : ''}`;
+                div.textContent = size;
+                div.onclick = () => {
+                    scriptureSettings.footerSize = size;
+                    document.getElementById('footerSizeInput').value = size;
+                    updateScripturePreview();
+                    updateSizeOptions();
+                };
+                footerSizeOptions.appendChild(div);
+            });
+        }
+        
+        function addScriptureSize() {
+            const input = document.getElementById('scriptureSizeInput');
+            const size = parseInt(input.value);
+            if (size && size >= 20 && size <= 200) {
+                if (!customFontSizes.scriptureSizes.includes(size)) {
+                    customFontSizes.scriptureSizes.push(size);
+                    customFontSizes.scriptureSizes.sort((a, b) => a - b);
+                    saveCustomFontSizes();
+                    updateSizeOptions();
+                }
+                scriptureSettings.scriptureSize = size;
+                updateScripturePreview();
+            }
+        }
+        
+        function addFooterSize() {
+            const input = document.getElementById('footerSizeInput');
+            const size = parseInt(input.value);
+            if (size && size >= 20 && size <= 100) {
+                if (!customFontSizes.footerSizes.includes(size)) {
+                    customFontSizes.footerSizes.push(size);
+                    customFontSizes.footerSizes.sort((a, b) => a - b);
+                    saveCustomFontSizes();
+                    updateSizeOptions();
+                }
+                scriptureSettings.footerSize = size;
+                updateScripturePreview();
+            }
+        }
+        
+        function updateScripturePreview() {
+            // Update settings from inputs
+            scriptureSettings.font = document.getElementById('scriptureFontSelect').value;
+            scriptureSettings.scriptureSize = parseInt(document.getElementById('scriptureSizeInput').value);
+            scriptureSettings.footerSize = parseInt(document.getElementById('footerSizeInput').value);
+            
+            // Get test scripture text
+            const testScripture = document.getElementById('testScriptureSelect').value;
+            let scriptureText = "";
+            let reference = "";
+            
+            switch(testScripture) {
+                case "John 3:16":
+                    scriptureText = "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.";
+                    reference = "John 3:16";
+                    break;
+                case "Psalm 23:1":
+                    scriptureText = "The Lord is my shepherd, I lack nothing. He makes me lie down in green pastures, he leads me beside quiet waters.";
+                    reference = "Psalm 23:1";
+                    break;
+                case "Matthew 28:19":
+                    scriptureText = "Go therefore and make disciples of all nations, baptizing them in the name of the Father and of the Son and of the Holy Spirit.";
+                    reference = "Matthew 28:19";
+                    break;
+                case "Romans 8:28":
+                    scriptureText = "And we know that in all things God works for the good of those who love him, who have been called according to his purpose.";
+                    reference = "Romans 8:28";
+                    break;
+            }
+            
+            // Render preview
+            const canvas = document.getElementById('scripturePreviewCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, RESOLUTION.width, RESOLUTION.height);
+            
+            // Render scripture text with current settings
+            const fontSize = scriptureSettings.scriptureSize;
+            const fontFace = scriptureSettings.font;
+            const color = scriptureSettings.color;
+            
+            ctx.font = `${scriptureSettings.italic ? 'italic' : ''} ${scriptureSettings.bold ? 'bold' : ''} ${fontSize}px "${fontFace}"`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = color;
+            
+            // Word wrap
+            const maxWidth = RESOLUTION.width - 200;
+            const words = scriptureText.split(' ');
+            let lines = [];
+            let currentLine = words[0];
+            
+            for (let i = 1; i < words.length; i++) {
+                const testLine = currentLine + ' ' + words[i];
+                const metrics = ctx.measureText(testLine);
+                if (metrics.width < maxWidth) {
+                    currentLine = testLine;
+                } else {
+                    lines.push(currentLine);
+                    currentLine = words[i];
+                }
+            }
+            lines.push(currentLine);
+            
+            // Calculate positioning
+            const lineHeight = fontSize * 1.2;
+            const totalHeight = lines.length * lineHeight;
+            const startY = (RESOLUTION.height - totalHeight) / 2 + (lineHeight / 2);
+            
+            // Draw text with shadow
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 4;
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 2;
+            
+            lines.forEach((line, index) => {
+                const y = startY + (index * lineHeight);
+                ctx.fillText(line, RESOLUTION.width / 2, y);
+            });
+            
+            // Draw reference footer
+            ctx.shadowBlur = 0;
+            ctx.font = `bold ${scriptureSettings.footerSize}px Arial`;
+            ctx.textAlign = 'right';
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.fillText(`- ${reference} (KJV)`, RESOLUTION.width - 50, RESOLUTION.height - 50);
+            
+            // Update size options highlight
+            updateSizeOptions();
+        }
+        
+        function resetScriptureSettings() {
+            scriptureSettings = {
+                font: "Segoe UI",
+                scriptureSize: 90,
+                footerSize: 40,
+                bold: false,
+                italic: false,
+                color: "#ffffff"
+            };
+            
+            document.getElementById('scriptureFontSelect').value = scriptureSettings.font;
+            document.getElementById('scriptureSizeInput').value = scriptureSettings.scriptureSize;
+            document.getElementById('footerSizeInput').value = scriptureSettings.footerSize;
+            
+            updateScripturePreview();
+            showToast('Scripture settings reset to default');
+        }
+        
+        // --- CUSTOM FONT SIZE FUNCTIONS ---
+        function loadCustomFontSizes() {
+            try {
+                const saved = localStorage.getItem(FONT_SIZES_KEY);
+                if (saved) {
+                    const sizes = JSON.parse(saved);
+                    customFontSizes = { ...customFontSizes, ...sizes };
+                    
+                    // Update editor datalist
+                    updateEditorSizeDatalist();
+                }
+            } catch (error) {
+                console.error('Error loading font sizes:', error);
+            }
+        }
+        
+        function saveCustomFontSizes() {
+            try {
+                localStorage.setItem(FONT_SIZES_KEY, JSON.stringify(customFontSizes));
+                updateEditorSizeDatalist();
+            } catch (error) {
+                console.error('Error saving font sizes:', error);
+            }
+        }
+        
+        function updateEditorSizeDatalist() {
+            const datalist = document.getElementById('sizePresets');
+            datalist.innerHTML = '';
+            
+            // Add default sizes
+            [40, 60, 90, 120, 150, 200].forEach(size => {
+                if (!customFontSizes.editorSizes.includes(size)) {
+                    customFontSizes.editorSizes.push(size);
+                }
+            });
+            
+            // Sort and add to datalist
+            customFontSizes.editorSizes.sort((a, b) => a - b);
+            customFontSizes.editorSizes.forEach(size => {
+                const option = document.createElement('option');
+                option.value = size;
+                datalist.appendChild(option);
+            });
+        }
+        
+        function addEditorSize(size) {
+            if (size && !customFontSizes.editorSizes.includes(size)) {
+                customFontSizes.editorSizes.push(size);
+                customFontSizes.editorSizes.sort((a, b) => a - b);
+                saveCustomFontSizes();
+            }
+        }
+        
+        // --- PRESENTATION STORAGE FUNCTIONS ---
+        function loadPresentationsFromStorage() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const savedPresentations = JSON.parse(saved);
+                    if (Array.isArray(savedPresentations)) {
+                        // Remove existing presentations from library
+                        library = library.filter(item => item.type !== 'Presentation');
+                        
+                        // Add saved presentations
+                        savedPresentations.forEach(presentation => {
+                            // Ensure each presentation has a unique ID
+                            if (!presentation.id) presentation.id = Date.now() + Math.random();
+                            library.push(presentation);
+                        });
+                        
+                        console.log(`Loaded ${savedPresentations.length} presentations from storage`);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading presentations from storage:', error);
+            }
+        }
+        
+        function savePresentationsToStorage() {
+            try {
+                const presentations = library.filter(item => item.type === 'Presentation');
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(presentations));
+                presentationsModified = false;
+                console.log(`Saved ${presentations.length} presentations to storage`);
+            } catch (error) {
+                console.error('Error saving presentations to storage:', error);
+                showToast('Error saving presentations to browser storage');
+            }
+        }
+        
+        function markPresentationsModified() {
+            presentationsModified = true;
+        }
+        
+        function showSavePresentationDialog() {
+            const presentations = library.filter(item => item.type === 'Presentation');
+            if (presentations.length > 0) {
+                document.getElementById('savePresentationDialog').style.display = 'flex';
+            }
+        }
+        
+        function exportPresentations() {
+            const presentations = library.filter(item => item.type === 'Presentation');
+            if (presentations.length === 0) {
+                showToast("No presentations to export!");
+                return;
+            }
+            
+            document.body.style.cursor = 'wait';
+            
+            // Create export data with metadata
+            const exportData = {
+                version: TOOL_VERSION,
+                exportDate: new Date().toISOString(),
+                type: 'OpenWorship Presentations',
+                presentations: presentations
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `OpenWorship_Presentations_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            document.body.style.cursor = 'default';
+            showToast(`Exported ${presentations.length} presentations!`);
+            document.getElementById('savePresentationDialog').style.display = 'none';
+            savePresentationsToStorage(); // Also save to localStorage
+        }
+        
+        function handlePresentationLoad(input) {
+            if (input.files[0]) {
+                const file = input.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        let presentations = [];
+                        
+                        // Handle different file formats
+                        if (data.presentations && Array.isArray(data.presentations)) {
+                            // New format with metadata
+                            presentations = data.presentations;
+                        } else if (Array.isArray(data)) {
+                            // Old format - just array of presentations
+                            presentations = data.filter(item => item.type === 'Presentation');
+                        } else {
+                            showToast("Invalid presentation file format");
+                            return;
+                        }
+                        
+                        if (presentations.length === 0) {
+                            showToast("No presentations found in file");
+                            return;
+                        }
+                        
+                        // Remove existing presentations
+                        library = library.filter(item => item.type !== 'Presentation');
+                        
+                        // Add imported presentations with new IDs to avoid conflicts
+                        presentations.forEach(pres => {
+                            const newPres = JSON.parse(JSON.stringify(pres));
+                            newPres.id = Date.now() + Math.random();
+                            library.push(newPres);
+                        });
+                        
+                        // Save to localStorage
+                        savePresentationsToStorage();
+                        
+                        // Refresh the library view
+                        if (currentTab === 'Presentation') {
+                            renderLibrary();
+                        }
+                        
+                        showToast(`Imported ${presentations.length} presentations!`);
+                        input.value = '';
+                        
+                    } catch (err) {
+                        showToast("Error reading presentation file: " + err.message);
+                    }
+                };
+                
+                reader.readAsText(file);
+            }
         }
         
         // --- VERSION CHECK ---
@@ -679,6 +1379,21 @@
             if(pCanvas) pCanvas.classList.add('fading');
 
             setTimeout(() => {
+                // Apply scripture settings if this is a scripture
+                if (newItem && newItem.type === 'Scripture' && newSlide) {
+                    const settings = scriptureSettings;
+                    if (newSlide.layers && newSlide.layers.length > 0) {
+                        newSlide.layers[0].style = {
+                            ...newSlide.layers[0].style,
+                            font: settings.font,
+                            fontSize: settings.scriptureSize,
+                            color: settings.color,
+                            bold: settings.bold,
+                            italic: settings.italic
+                        };
+                    }
+                }
+                
                 renderSlide(monitor.getContext('2d'), newSlide, footer);
                 if(pCanvas) {
                     renderSlide(pCanvas.getContext('2d'), newSlide, footer);
@@ -742,26 +1457,64 @@
             }
         }
 
-        // --- OPEN PROJECTOR ---
+        // --- OPEN PROJECTOR (UPDATED FOR 1:1 FONT SYNCHRONIZATION) ---
         function openProjector() {
             if(projectorWindow && !projectorWindow.closed) {
                 projectorWindow.focus();
             } else {
+                // Collect all installed fonts and their data URLs
+                let fontStyles = '';
+                for (let fontName in localFontData) {
+                    fontStyles += `@font-face { font-family: "${fontName}"; src: url(${localFontData[fontName]}); }\n`;
+                }
+                
+                // Also include Google Fonts
+                const googleFontsLink = 'https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&family=Oswald:wght@400;700&family=Poppins:wght@400;700&display=swap';
+                
                 projectorWindow = window.open("", "Projector", "width=800,height=600");
                 projectorWindow.document.write(`
                     <html>
                     <head>
                         <title>LIVE OUTPUT</title>
+                        <link href="${googleFontsLink}" rel="stylesheet">
                         <style>
                             body { margin:0; background:black; overflow:hidden; }
                             canvas { width:100vw; height:100vh; object-fit:contain; display:block; transition: opacity 0.3s ease; }
                             .fading { opacity: 0; }
+                            ${fontStyles}
                         </style>
                     </head>
                     <body>
                         <canvas id="projectorCanvas" width="${RESOLUTION.width}" height="${RESOLUTION.height}"></canvas>
                     </body>
                     <script>
+                        // Font synchronization function
+                        function synchronizeFonts() {
+                            try {
+                                // Request font data from parent window
+                                if (window.opener && !window.opener.closed) {
+                                    // Get available fonts from parent
+                                    const availableFonts = window.opener.availableFonts || [];
+                                    const localFontData = window.opener.localFontData || {};
+                                    
+                                    // Create font faces for local fonts
+                                    for (let fontName in localFontData) {
+                                        try {
+                                            const fontFace = new FontFace(fontName, \`url(\${localFontData[fontName]})\`);
+                                            document.fonts.add(fontFace);
+                                        } catch(e) {
+                                            console.log("Failed to load font:", fontName);
+                                        }
+                                    }
+                                }
+                            } catch(e) {
+                                console.log("Font sync error:", e);
+                            }
+                        }
+                        
+                        // Sync fonts on load
+                        window.addEventListener('load', synchronizeFonts);
+                        
                         document.addEventListener('dblclick', () => { 
                             if(!document.fullscreenElement) document.documentElement.requestFullscreen(); 
                             else document.exitFullscreen(); 
@@ -770,10 +1523,25 @@
                     <\/script>
                     </html>
                 `);
+                
+                // Wait for window to load, then render
                 projectorWindow.onload = () => { 
                     document.getElementById('projStatus').innerText = "LIVE"; 
                     document.getElementById('projStatus').style.color = "#4caf50"; 
-                    reRenderLive();
+                    
+                    // Force re-render to ensure projector gets exact same output
+                    setTimeout(() => {
+                        reRenderLive();
+                        
+                        // Additional font sync check
+                        if (projectorWindow) {
+                            try {
+                                projectorWindow.synchronizeFonts && projectorWindow.synchronizeFonts();
+                            } catch(e) {
+                                console.log("Projector font sync:", e);
+                            }
+                        }
+                    }, 500);
                 };
                 
                 const timer = setInterval(() => {
@@ -854,8 +1622,16 @@
         // --- SEARCH LOGIC ---
         function handleSearch() {
             const query = document.getElementById('librarySearch').value;
-            if (currentTab === 'Scripture') {
+            
+            // Reset scroll count for new searches (except when typing ranges)
+            const rangeRegex = /^([1-3]?\s?[a-zA-Z]+)\s+(\d+):(\d+)-(\d+)$/;
+            const match = query.match(rangeRegex);
+            
+            if (!match) {
                 visibleScriptureCount.Scripture = 500;
+            }
+            
+            if (currentTab === 'Scripture') {
                 renderScriptureList(query, false);
             } else if (currentTab === 'Song') {
                 visibleScriptureCount.Song = 500;
@@ -882,7 +1658,7 @@
             const match = query.match(rangeRegex);
 
             // --- 1. HANDLE RANGE ITEM ---
-            if (match && !append) {
+            if (match) {
                 const book = match[1];
                 const chapter = parseInt(match[2]);
                 const startV = parseInt(match[3]);
@@ -917,10 +1693,17 @@
                     };
                     div.ondblclick = () => goLive(compositeItem.slides[0], compositeItem);
                     container.appendChild(div);
+                    
+                    // If we found a range, we should clear any regular search results
+                    // But only if not appending (new search)
+                    if (!append) {
+                        // Don't show regular results when we have a range
+                        return;
+                    }
                 }
             }
 
-            // --- 2. HANDLE SCROLLABLE LIST ---
+            // --- 2. HANDLE SCROLLABLE LIST (only if no range was found or we're appending) ---
             const lowerQ = query.toLowerCase();
             let itemsToRender = []; 
 
@@ -966,7 +1749,7 @@
                 container.appendChild(d);
             }
             
-            if (itemsToRender.length === 0 && !append) {
+            if (itemsToRender.length === 0 && !append && !match) {
                 container.innerHTML = "<div style='padding:20px; color:#777;'>" + 
                     (bibleLibrary.length === 0 ? 
                         "Bible not loaded. Go to File > Fetch Bible." : 
@@ -978,7 +1761,7 @@
             if (!append && container.querySelectorAll('.schedule-item').length > 0) {
                 const firstItem = container.querySelector('.schedule-item');
                 if (firstItem) firstItem.click();
-            } else if (container.querySelectorAll('.schedule-item').length === 0) {
+            } else if (container.querySelectorAll('.schedule-item').length === 0 && !match) {
                 document.getElementById('libraryPreviewText').innerText = "Select an item to preview text...";
             }
             
@@ -1030,6 +1813,8 @@
                     newItem.type = 'Presentation'; 
                     library.push(newItem);
                     renderLibrary();
+                    markPresentationsModified();
+                    savePresentationsToStorage();
                 }
             }
             resetDrag();
@@ -1266,7 +2051,7 @@
                 }); 
             }); 
             if(footer && !isPreview) { 
-                ctx.font = 'bold 40px Arial'; 
+                ctx.font = 'bold ' + (footer.includes("(KJV)") ? scriptureSettings.footerSize : 40) + 'px Arial'; 
                 ctx.textAlign = 'right'; 
                 ctx.fillStyle = 'rgba(255,255,255,0.7)'; 
                 ctx.shadowBlur = 0; 
@@ -1418,8 +2203,13 @@
         function updateCurrentBlockStyle() { 
             let s = tempSlides[currentSlideIndex].layers[selectedLayerIndex].style; 
             s.font = document.getElementById('toolFont').value; 
-            s.fontSize = parseInt(document.getElementById('toolSize').value); 
+            const newSize = parseInt(document.getElementById('toolSize').value);
+            s.fontSize = newSize;
             s.color = document.getElementById('toolColor').value; 
+            
+            // Save this size to custom sizes
+            addEditorSize(newSize);
+            
             renderEditorPreview(); 
         }
 
@@ -1446,6 +2236,12 @@
             if(editingItem.context === 'schedule') renderSchedule(); else renderLibrary(); 
             document.getElementById('editorModal').style.display = 'none'; 
             showToast(`Item "${editingItem.ref.title}" updated.`);
+            
+            // If this was a presentation, mark as modified and save to storage
+            if (editingItem.ref.type === 'Presentation') {
+                markPresentationsModified();
+                savePresentationsToStorage();
+            }
         }
 
         function closeEditor() { 
@@ -1477,65 +2273,99 @@
             }; 
             library.push(newItem); 
             renderLibrary(); 
+            markPresentationsModified();
+            savePresentationsToStorage();
             openEditor(library.length - 1, 'library'); 
         }
 
         function fetchGoogleFont() { 
-            const nameInput = document.getElementById('googleFontName'); 
-            const name = nameInput.value.trim(); 
-            const status = document.getElementById('fontStatus'); 
-            if(!name) return; 
-            status.innerText = "Fetching..."; 
-            status.style.color = "#bbb"; 
-            const link = document.createElement('link'); 
-            link.href = `https://fonts.googleapis.com/css?family=${name.replace(/ /g, '+')}&display=swap`; 
-            link.rel = 'stylesheet'; 
-            link.onload = () => { 
-                addFontOption(name); 
-                status.innerText = `Success! "${name}" added.`; 
-                status.style.color = "#4caf50"; 
-                nameInput.value = ""; 
-                renderFontList(); 
-                setTimeout(() => { 
-                    document.getElementById('fontManager').style.display = 'none'; 
-                    status.innerText = ""; 
-                }, 1000); 
-            }; 
-            link.onerror = () => { 
-                status.innerText = `Error: Font "${name}" not found.`; 
-                status.style.color = "#d32f2f"; 
-            }; 
-            document.head.appendChild(link); 
+            const nameInput = document.getElementById('googleFontName');
+            const name = nameInput.value.trim();
+            const status = document.getElementById('fontStatus');
+            if(!name) return;
+            status.innerText = "Fetching...";
+            status.style.color = "#bbb";
+            const link = document.createElement('link');
+            link.href = `https://fonts.googleapis.com/css?family=${name.replace(/ /g, '+')}&display=swap`;
+            link.rel = 'stylesheet';
+            link.onload = () => {
+                addFontOption(name);
+                status.innerText = `Success! "${name}" added.`;
+                status.style.color = "#4caf50";
+                nameInput.value = "";
+                renderFontList();
+                
+                // Update projector window if open
+                if (projectorWindow && !projectorWindow.closed) {
+                    try {
+                        const newLink = projectorWindow.document.createElement('link');
+                        newLink.href = link.href;
+                        newLink.rel = 'stylesheet';
+                        projectorWindow.document.head.appendChild(newLink);
+                    } catch(e) {
+                        console.log("Failed to update projector with Google Font:", e);
+                    }
+                }
+                
+                setTimeout(() => {
+                    document.getElementById('fontManager').style.display = 'none';
+                    status.innerText = "";
+                }, 1000);
+            };
+            link.onerror = () => {
+                status.innerText = `Error: Font "${name}" not found.`;
+                status.style.color = "#d32f2f";
+            };
+            document.head.appendChild(link);
         }
 
-        function uploadLocalFont(input) { 
-            if(input.files && input.files[0]) { 
-                const status = document.getElementById('fontStatus'); 
-                status.innerText = "Loading file..."; 
-                status.style.color = "#bbb"; 
-                const file = input.files[0]; 
-                const reader = new FileReader(); 
-                reader.onload = (e) => { 
-                    const fontName = file.name.split('.')[0]; 
-                    const fontFace = new FontFace(fontName, e.target.result); 
-                    fontFace.load().then(loadedFace => { 
-                        document.fonts.add(loadedFace); 
-                        addFontOption(fontName); 
-                        status.innerText = `Success! "${fontName}" loaded.`; 
-                        status.style.color = "#4caf50"; 
-                        input.value = ""; 
-                        renderFontList(); 
-                        setTimeout(() => { 
-                            document.getElementById('fontManager').style.display = 'none'; 
-                            status.innerText = ""; 
-                        }, 1000); 
-                    }).catch(err => { 
-                        status.innerText = "Failed to load font file."; 
-                        status.style.color = "#d32f2f"; 
-                    }); 
-                }; 
-                reader.readAsArrayBuffer(file); 
-            } 
+        function uploadLocalFont(input) {
+            if(input.files && input.files[0]) {
+                const status = document.getElementById('fontStatus');
+                status.innerText = "Loading file...";
+                status.style.color = "#bbb";
+                const file = input.files[0];
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const fontName = file.name.split('.')[0];
+                    const arrayBuffer = e.target.result;
+                    const base64 = arrayBufferToBase64(arrayBuffer);
+                    const dataURL = `data:font/opentype;base64,${base64}`;
+                    
+                    // Store font data for projector window
+                    localFontData[fontName] = dataURL;
+
+                    const fontFace = new FontFace(fontName, `url(${dataURL})`);
+                    fontFace.load().then(loadedFace => {
+                        document.fonts.add(loadedFace);
+                        addFontOption(fontName);
+                        status.innerText = `Success! "${fontName}" loaded.`;
+                        status.style.color = "#4caf50";
+                        input.value = "";
+                        renderFontList();
+                        
+                        // Update projector window if open
+                        if (projectorWindow && !projectorWindow.closed) {
+                            try {
+                                const style = projectorWindow.document.createElement('style');
+                                style.textContent = `@font-face { font-family: "${fontName}"; src: url(${dataURL}); }`;
+                                projectorWindow.document.head.appendChild(style);
+                            } catch(e) {
+                                console.log("Failed to update projector fonts:", e);
+                            }
+                        }
+                        
+                        setTimeout(() => {
+                            document.getElementById('fontManager').style.display = 'none';
+                            status.innerText = "";
+                        }, 1000);
+                    }).catch(err => {
+                        status.innerText = "Failed to load font file.";
+                        status.style.color = "#d32f2f";
+                    });
+                };
+                reader.readAsArrayBuffer(file);
+            }
         }
 
         function addFontOption(name) { 
@@ -1665,6 +2495,13 @@
                         library = [...library, ...newItems];
                         if (currentTab === 'Song' || currentTab === 'Presentation') renderLibrary();
                         showToast(`Loaded ${newItems.length} songs/hymns!`);
+                        
+                        // If presentations were loaded, save them to storage
+                        const presentationCount = newItems.filter(item => item.type === 'Presentation').length;
+                        if (presentationCount > 0) {
+                            markPresentationsModified();
+                            savePresentationsToStorage();
+                        }
                     } else {
                         showToast("Could not determine content type. Loaded nothing.");
                     }
@@ -1709,8 +2546,18 @@
                 schedule.splice(rightClickedItem.index, 1); 
                 renderSchedule(); 
             } else if (rightClickedItem.context === 'library') { 
+                // If removing a presentation, mark as modified
+                if (rightClickedItem.item.type === 'Presentation') {
+                    markPresentationsModified();
+                }
+                
                 library.splice(rightClickedItem.index, 1); 
-                renderLibrary(); 
+                renderLibrary();
+                
+                // Save presentations to storage if one was removed
+                if (rightClickedItem.item.type === 'Presentation') {
+                    savePresentationsToStorage();
+                }
             } 
             document.getElementById('contextMenu').style.display = 'none'; 
         };
