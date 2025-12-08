@@ -342,4 +342,4 @@ Isolated execution
 
 Better error handling
 
-_# Happy extending! The OpenWorship Community_
+# _Happy extending! The OpenWorship Community_
