@@ -232,6 +232,54 @@
             flex-direction: column;
             justify-content: center;
         }
+        
+        /* Extension Ecosystem Specific Styles */
+        .extension-highlight-card {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 2px solid var(--primary-accent-blue);
+            border-radius: 16px;
+            box-shadow: 0 0 40px rgba(0, 196, 255, 0.15);
+            transition: all 0.3s ease;
+        }
+        .extension-highlight-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 60px rgba(0, 196, 255, 0.25);
+            border-color: var(--secondary-accent-purple);
+        }
+        
+        .marketplace-badge {
+            background: linear-gradient(90deg, #8A2BE2, #00C4FF);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            display: inline-block;
+            margin-left: 10px;
+        }
+        
+        .extension-icon-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .extension-icon {
+            background: rgba(0, 196, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 196, 255, 0.2);
+        }
+        
+        .extension-icon:hover {
+            background: rgba(0, 196, 255, 0.2);
+            transform: scale(1.05);
+            border-color: var(--primary-accent-blue);
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -255,8 +303,8 @@
 
                 <a id="nav-download-btn" onclick="handleDownload(event)"
                    href="#" 
-                   download="Open-Worship.html"
-                   class="download-btn px-6 py-2 rounded-full text-base">Download <span id="nav-version">v2.3.14</span></a>
+                   download="OpenWorship-Modular.html"
+                   class="download-btn px-6 py-2 rounded-full text-base">Download <span id="nav-version">v3.2.0</span></a>
             </div>
         </div>
     </header>
@@ -277,20 +325,69 @@
                         WORSHIP<br>WITHOUT<br>THE WAIT.
                     </h2>
                     <p class="text-xl md:text-2xl text-text-muted mb-10">
-                        The ultimate <b>FREE</b> presentation solution for song scheduling, scripture display, and dual-screen live output. No Installation. No Licenses. Just Worship.
+                        The ultimate <b>FREE</b> presentation solution for song scheduling, scripture display, and dual-screen live output. Now with a powerful <b class="text-primary-accent-blue">Extension Ecosystem</b><span class="marketplace-badge">NEW</span> for unlimited customization.
                     </p>
                     <a id="hero-download-btn" onclick="handleDownload(event)"
                        href="#" 
-                       download="Open-Worship.html"
+                       download="OpenWorship-Modular.html"
                        class="download-btn inline-flex items-center justify-center px-12 py-5 rounded-full text-xl font-extrabold shadow-2xl">
                         <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                        GET OPENWORSHIP <span id="hero-version">v2.3.14</span>
+                        GET OPENWORSHIP <span id="hero-version">v3.2.0</span>
                     </a>
                     <p class="mt-6 text-sm text-gray-400">
-                        Current Version: <span id="hero-version-small">v2.3.14</span> 
+                        Current Version: <span id="hero-version-small">v3.2.0</span> 
                         <span id="version-date" class="ml-2 text-xs text-text-muted"></span>
                         | Runs on any modern web browser (Chrome, Edge, Firefox)
                     </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- NEW SECTION: Extension Ecosystem -->
+        <section class="py-20 bg-dark-bg-deep">
+            <div class="max-w-7xl mx-auto px-4 lg:px-8">
+                <div class="extension-highlight-card p-8">
+                    <div class="flex flex-col md:flex-row items-center">
+                        <div class="md:w-1/3 text-center md:text-left mb-8 md:mb-0">
+                            <div class="text-6xl mb-4 text-primary-accent-blue">
+                                <i class="fas fa-puzzle-piece"></i>
+                            </div>
+                            <h3 class="text-3xl font-bold text-white">Extension Ecosystem</h3>
+                            <p class="text-text-muted mt-2">Unlock unlimited possibilities</p>
+                        </div>
+                        
+                        <div class="md:w-2/3 md:pl-12">
+                            <h4 class="text-xl font-bold text-white mb-4">Transform Your Worship Experience</h4>
+                            <p class="text-text-muted mb-6">
+                                OpenWorship v3.2.0 introduces a revolutionary modular architecture with a built-in <b class="text-primary-accent-blue">Extension Marketplace</b>. Now you can customize your worship software exactly how you need it, with community-built extensions that add powerful new features.
+                            </p>
+                            
+                            <div class="extension-icon-grid">
+                                <div class="extension-icon">
+                                    <div class="text-2xl text-primary-accent-blue mb-2"><i class="fas fa-store"></i></div>
+                                    <div class="text-sm font-semibold">Extension Marketplace</div>
+                                </div>
+                                <div class="extension-icon">
+                                    <div class="text-2xl text-secondary-accent-purple mb-2"><i class="fas fa-images"></i></div>
+                                    <div class="text-sm font-semibold">Wallpaper Manager</div>
+                                </div>
+                                <div class="extension-icon">
+                                    <div class="text-2xl text-green-400 mb-2"><i class="fas fa-font"></i></div>
+                                    <div class="text-sm font-semibold">Font Manager</div>
+                                </div>
+                                <div class="extension-icon">
+                                    <div class="text-2xl text-yellow-400 mb-2"><i class="fas fa-plus-circle"></i></div>
+                                    <div class="text-sm font-semibold">More Coming Soon!</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-8 p-4 bg-dark-panel-subtle rounded-lg border-l-4 border-primary-accent-blue">
+                                <p class="text-sm text-text-muted">
+                                    <b class="text-white">Featured Extension:</b> The Wallpaper Manager lets you browse and apply high-quality worship backgrounds directly from GitHub repositories, while the Extension Marketplace provides one-click installation and updates for all your extensions.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -338,9 +435,9 @@
 
                     <!-- Feature 6 -->
                     <div class="feature-card p-6">
-                        <div class="text-primary-accent-blue text-3xl mb-4"><i class="fas fa-laptop-code"></i></div>
-                        <h3 class="text-xl font-bold mb-2 text-white">Cross-Platform</h3>
-                        <p class="text-text-muted">Runs on Windows, macOS, Linux, and even Chromebooks via any modern web browser.</p>
+                        <div class="text-primary-accent-blue text-3xl mb-4"><i class="fas fa-puzzle-piece"></i></div>
+                        <h3 class="text-xl font-bold mb-2 text-white">Extension System</h3>
+                        <p class="text-text-muted">Add new features with community extensions. Browse and install from the built-in marketplace.</p>
                     </div>
 
                 </div>
@@ -399,9 +496,19 @@
                             </tr>
                             <!-- NEW ROWS ADDED HERE -->
                             <tr class="border-b border-gray-800 hover:bg-gray-900">
-                                <td class="p-4">Extension System</td>
-                                <td class="p-4 text-center bg-dark-panel-subtle"><i class="fas fa-check text-green-400"></i> (Modular Plugin Architecture)</td>
+                                <td class="p-4">Extension Marketplace</td>
+                                <td class="p-4 text-center bg-dark-panel-subtle"><i class="fas fa-check text-green-400"></i> (Browse & Install Extensions)</td>
                                 <td class="p-4 text-center"><i class="fas fa-times text-red-400"></i> (Closed System)</td>
+                            </tr>
+                            <tr class="border-b border-gray-800 hover:bg-gray-900">
+                                <td class="p-4">Modular Architecture</td>
+                                <td class="p-4 text-center bg-dark-panel-subtle"><i class="fas fa-check text-green-400"></i> (v3.2.0 Modular Core)</td>
+                                <td class="p-4 text-center"><i class="fas fa-times text-red-400"></i> (Monolithic)</td>
+                            </tr>
+                            <tr class="border-b border-gray-800 hover:bg-gray-900">
+                                <td class="p-4">GitHub Wallpaper Integration</td>
+                                <td class="p-4 text-center bg-dark-panel-subtle"><i class="fas fa-check text-green-400"></i> (Wallpaper Manager)</td>
+                                <td class="p-4 text-center"><i class="fas fa-times text-red-400"></i></td>
                             </tr>
                             <tr class="border-b border-gray-800 hover:bg-gray-900">
                                 <td class="p-4">Font Management</td>
@@ -409,19 +516,14 @@
                                 <td class="p-4 text-center"><i class="fas fa-times text-red-400"></i></td>
                             </tr>
                             <tr class="border-b border-gray-800 hover:bg-gray-900">
-                                <td class="p-4">Presentation Editor</td>
-                                <td class="p-4 text-center bg-dark-panel-subtle"><i class="fas fa-check text-green-400"></i> (Visual Drag & Drop)</td>
+                                <td class="p-4">Visual Slide Editor</td>
+                                <td class="p-4 text-center bg-dark-panel-subtle"><i class="fas fa-check text-green-400"></i> (Drag & Drop Layers)</td>
                                 <td class="p-4 text-center"><i class="fas fa-check text-green-400"></i> (Limited)</td>
                             </tr>
                             <tr class="border-b border-gray-800 hover:bg-gray-900">
                                 <td class="p-4">Scripture Display Settings</td>
                                 <td class="p-4 text-center bg-dark-panel-subtle"><i class="fas fa-check text-green-400"></i> (Custom Font Sizes)</td>
                                 <td class="p-4 text-center"><i class="fas fa-times text-red-400"></i></td>
-                            </tr>
-                            <tr class="border-b border-gray-800 hover:bg-gray-900">
-                                <td class="p-4">Modular Architecture</td>
-                                <td class="p-4 text-center bg-dark-panel-subtle"><i class="fas fa-check text-green-400"></i> (v3.2.0 Modular Core)</td>
-                                <td class="p-4 text-center"><i class="fas fa-times text-red-400"></i> (Monolithic)</td>
                             </tr>
                             <tr class="border-b border-gray-800 hover:bg-gray-900">
                                 <td class="p-4">Live Text Preview</td>
@@ -432,6 +534,11 @@
                                 <td class="p-4">Presentation Storage</td>
                                 <td class="p-4 text-center bg-dark-panel-subtle"><i class="fas fa-check text-green-400"></i> (Browser & File Export)</td>
                                 <td class="p-4 text-center"><i class="fas fa-check text-green-400"></i> (File Only)</td>
+                            </tr>
+                            <tr class="border-b border-gray-800 hover:bg-gray-900">
+                                <td class="p-4">Extension Auto-Updates</td>
+                                <td class="p-4 text-center bg-dark-panel-subtle"><i class="fas fa-check text-green-400"></i> (Marketplace Self-Updates)</td>
+                                <td class="p-4 text-center"><i class="fas fa-times text-red-400"></i></td>
                             </tr>
                             <!-- END NEW ROWS -->
                         </tbody>
@@ -469,15 +576,15 @@
         <!-- Call to Action --><section class="py-24 bg-dark-bg-deep text-center">
              <a id="footer-download-btn" onclick="handleDownload(event)"
                 href="#" 
-                download="Open-Worship.html"
+                download="OpenWorship-Modular.html"
                 class="download-btn inline-flex items-center justify-center px-16 py-6 rounded-full text-2xl font-extrabold">
                 <svg class="w-8 h-8 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                DOWNLOAD OPENWORSHIP <span id="footer-version"> v2.3.14</span> NOW
+                DOWNLOAD OPENWORSHIP <span id="footer-version">v3.2.0</span> NOW
             </a>
             <!-- User-Focused Instructions --><p class="mt-8 text-lg font-semibold text-text-muted max-w-2xl mx-auto">
-                You are downloading the complete <b>OpenWorship</b> application (<span id="footer-version-small">v2.3.14</span>). 
+                You are downloading the complete <b>OpenWorship Modular Edition</b> (<span id="footer-version-small">v3.2.0</span>). 
                 <br>
-                It is a single, serverless .html file. No installation or setup is required.
+                Includes built-in Extension Marketplace and modular architecture. A single, serverless .html file. No installation or setup is required.
             </p>
             
         </section>
@@ -502,6 +609,33 @@
 
         <!-- Content Container --><div class="max-w-6xl mx-auto p-8 lg:p-12 space-y-12">
             
+            <!-- NEW SECTION: Extension Ecosystem -->
+            <section class="border-b border-gray-800 pb-8">
+                <h3 class="text-4xl font-bold text-primary-accent-blue mb-4">🚀 The Extension Revolution</h3>
+                <div class="flex items-start space-x-6">
+                    <svg class="w-12 h-12 text-secondary-accent-purple flex-shrink-0 mt-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    <div>
+                        <h4 class="text-2xl font-semibold text-text-light mb-3">Modular Architecture & Extension Marketplace</h4>
+                        <p class="text-text-muted mb-4">
+                            OpenWorship v3.2.0 introduces a <b>revolutionary modular architecture</b> with a built-in <b>Extension Marketplace</b>. This transforms your worship software from a static tool into a dynamic platform that grows with your needs.
+                        </p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                            <div class="p-4 bg-dark-panel-subtle rounded-lg">
+                                <h5 class="font-bold text-primary-accent-blue mb-2"><i class="fas fa-store mr-2"></i>Extension Marketplace</h5>
+                                <p class="text-sm text-text-muted">Browse, install, and update community-built extensions directly within OpenWorship. The marketplace even updates itself!</p>
+                            </div>
+                            <div class="p-4 bg-dark-panel-subtle rounded-lg">
+                                <h5 class="font-bold text-secondary-accent-purple mb-2"><i class="fas fa-images mr-2"></i>Wallpaper Manager</h5>
+                                <p class="text-sm text-text-muted">Access thousands of worship backgrounds directly from GitHub repositories. Browse packs and apply with one click.</p>
+                            </div>
+                        </div>
+                        <p class="mt-6 text-text-muted">
+                            <b>Why this matters:</b> Traditional worship software is monolithic and static. With OpenWorship's extension system, you can add exactly the features you need without bloat. Community developers can create specialized tools for different worship styles, languages, or technical requirements.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
             <!-- Section 1: The Philosophy (Why the Name?) --><section class="border-b border-gray-800 pb-8">
                 <h3 class="text-4xl font-bold text-primary-accent-blue mb-4">The Name: OpenWorship</h3>
                 <div class="flex items-start space-x-6">
@@ -618,9 +752,9 @@
     </div>
 
     <script>
-        const GITHUB_RAW_URL = "https://raw.githubusercontent.com/Cleo876/open-worship/refs/heads/main/Open-Worship.html";
-        const GITHUB_API_URL = "https://api.github.com/repos/Cleo876/open-worship/commits?path=Open-Worship.html&page=1&per_page=1";
-        const DOWNLOAD_FILENAME = "Open-Worship.html";
+        const GITHUB_RAW_URL = "https://raw.githubusercontent.com/Cleo876/open-worship/refs/heads/main/OpenWorship-Modular.html";
+        const GITHUB_API_URL = "https://api.github.com/repos/Cleo876/open-worship/commits?path=OpenWorship-Modular.html&page=1&per_page=1";
+        const DOWNLOAD_FILENAME = "OpenWorship-Modular.html";
 
         // Store the fetched content globally
         let OPENWORSHIP_APP_SOURCE = null;
@@ -660,7 +794,7 @@
          * Then updates all version display elements and stores the source code globally.
          */
         async function fetchAndDisplayVersion() {
-            let version = "v2.3.14 (N/A)"; // Default if fetch fails
+            let version = "v3.2.0"; // Default if fetch fails
             let updateDate = "";
 
             try {
@@ -672,18 +806,16 @@
                 const content = await response.text();
                 OPENWORSHIP_APP_SOURCE = content; // Store the source code globally
                 
-                // Regex to find the TOOL_VERSION variable declaration
-                const versionScriptMatch = content.match(/const\s+TOOL_VERSION\s+=\s+['"]([\d\.]+)['"];/);
+                // Regex to find the OPENWORSHIP_CONFIG.VERSION declaration in the modular version
+                const versionMatch = content.match(/VERSION:\s*['"]([\d\.]+)['"]/);
                 
-                if (versionScriptMatch && versionScriptMatch[1]) {
-                    version = `v${versionScriptMatch[1]}`;
+                if (versionMatch && versionMatch[1]) {
+                    version = `v${versionMatch[1]}`;
                 } else {
-                     // Fallback to the version in the <title> tag if TOOL_VERSION is not found
-                    const titleMatch = content.match(/<title>OpenWorship\s+(v[\d\.]+)/);
+                    // Fallback to searching for version in title
+                    const titleMatch = content.match(/<title>.*v([\d\.]+)/i);
                     if (titleMatch && titleMatch[1]) {
-                        version = titleMatch[1];
-                    } else {
-                        version = "v2.3.14 (Unmatched)";
+                        version = `v${titleMatch[1]}`;
                     }
                 }
 
@@ -720,8 +852,12 @@
             elements.forEach(item => {
                 const el = document.getElementById(item.id);
                 if (el) {
-                    // Only apply 'v' prefix if the ID explicitly requires it (e.g., download button text)
-                    const outputText = (item.id === 'nav-version' || item.id === 'hero-version') ? displayVersion : displayVersion.substring(1);
+                    // Remove any existing 'v' prefix to avoid duplication
+                    const cleanVersion = displayVersion.startsWith('v') ? displayVersion.substring(1) : displayVersion;
+                    // For download buttons, we want the full version with 'v'
+                    const outputText = (item.id === 'nav-version' || item.id === 'hero-version' || item.id === 'footer-version') 
+                        ? displayVersion 
+                        : cleanVersion;
                     el.textContent = `${item.prefix}${outputText}${item.suffix}`;
                 }
             });
