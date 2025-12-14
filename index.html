@@ -752,9 +752,9 @@
     </div>
 
     <script>
-        const GITHUB_RAW_URL = "https://raw.githubusercontent.com/Cleo876/open-worship/refs/heads/main/OpenWorship-Modular.html";
-        const GITHUB_API_URL = "https://api.github.com/repos/Cleo876/open-worship/commits?path=OpenWorship-Modular.html&page=1&per_page=1";
-        const DOWNLOAD_FILENAME = "OpenWorship-Modular.html";
+        const GITHUB_RAW_URL = "https://raw.githubusercontent.com/Cleo876/open-worship/refs/heads/main/Open-Worship.html";
+        const GITHUB_API_URL = "https://api.github.com/repos/Cleo876/open-worship/commits?path=Open-Worship.html&page=1&per_page=1";
+        let DOWNLOAD_FILENAME = "Open-Worship.html";
 
         // Store the fetched content globally
         let OPENWORSHIP_APP_SOURCE = null;
@@ -767,13 +767,24 @@
             e.preventDefault();
             
             if (!OPENWORSHIP_APP_SOURCE) {
-                // If source hasn't been fetched yet, prompt and return
-                alert("The application file is still loading. Please try again in a moment.");
+                // If source hasn't been fetched yet, try to fetch it now
+                alert("The application file is loading. Please wait a moment and try again.");
+                fetchAndDisplayVersion().then(() => {
+                    if (OPENWORSHIP_APP_SOURCE) {
+                        triggerDownload();
+                    } else {
+                        alert("Failed to load the application file. Please check your internet connection and try again.");
+                    }
+                });
                 return;
             }
 
+            triggerDownload();
+        }
+
+        function triggerDownload() {
             // 1. Create a Blob from the fetched HTML source
-            const blob = new Blob([OPENWORSHIP_APP_SOURCE], {type: "text/html"});
+            const blob = new Blob([OPENWORSHIP_APP_SOURCE], {type: "text/html;charset=utf-8"});
             
             // 2. Create a temporary URL and anchor element to trigger download
             const url = URL.createObjectURL(blob);
@@ -788,7 +799,6 @@
             URL.revokeObjectURL(url);
         }
 
-
         /**
          * Fetches the OpenWorship application file and extracts the version number.
          * Then updates all version display elements and stores the source code globally.
@@ -799,42 +809,85 @@
 
             try {
                 // 1. Fetch the raw content for download and version extraction
-                const response = await fetch(GITHUB_RAW_URL);
+                const response = await fetch(GITHUB_RAW_URL, {
+                    cache: 'no-cache',
+                    headers: {
+                        'Accept': 'text/html'
+                    }
+                });
+                
                 if (!response.ok) {
-                    throw new Error(`Failed to fetch file: ${response.statusText}`);
+                    throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
                 }
+                
                 const content = await response.text();
                 OPENWORSHIP_APP_SOURCE = content; // Store the source code globally
                 
-                // Regex to find the OPENWORSHIP_CONFIG.VERSION declaration in the modular version
-                const versionMatch = content.match(/VERSION:\s*['"]([\d\.]+)['"]/);
+                // Regex patterns to find the version - try multiple patterns
+                let versionMatch = null;
+                
+                // Try pattern for OPENWORSHIP_CONFIG.VERSION
+                versionMatch = content.match(/OPENWORSHIP_CONFIG\.VERSION\s*=\s*['"]([^'"]+)['"]/);
+                
+                if (!versionMatch) {
+                    // Try pattern for VERSION: in config
+                    versionMatch = content.match(/VERSION:\s*['"]([^'"]+)['"]/);
+                }
+                
+                if (!versionMatch) {
+                    // Try pattern for version in meta tag
+                    versionMatch = content.match(/<meta[^>]*version["']?\s*content=["']([^"']+)["']/i);
+                }
+                
+                if (!versionMatch) {
+                    // Try pattern for version in comment
+                    versionMatch = content.match(/<!--.*version.*?v?(\d+\.\d+\.\d+).*?-->/i);
+                }
+                
+                if (!versionMatch) {
+                    // Fallback to searching for version in title
+                    versionMatch = content.match(/<title>.*v?(\d+\.\d+\.\d+)/i);
+                }
+                
+                if (!versionMatch) {
+                    // Last resort: look for any version pattern
+                    versionMatch = content.match(/v?(\d+\.\d+\.\d+)/);
+                }
                 
                 if (versionMatch && versionMatch[1]) {
-                    version = `v${versionMatch[1]}`;
-                } else {
-                    // Fallback to searching for version in title
-                    const titleMatch = content.match(/<title>.*v([\d\.]+)/i);
-                    if (titleMatch && titleMatch[1]) {
-                        version = `v${titleMatch[1]}`;
-                    }
+                    version = versionMatch[1].startsWith('v') ? versionMatch[1] : `v${versionMatch[1]}`;
                 }
 
                 // 2. Fetch the commit history for the date
-                const apiResponse = await fetch(GITHUB_API_URL);
-                if (apiResponse.ok) {
-                    const commits = await apiResponse.json();
-                    if (commits && commits.length > 0) {
-                        const dateStr = commits[0].commit.author.date;
-                        const dateObj = new Date(dateStr);
-                        // Custom Format: Nov. 30, 2025
-                        const options = { year: 'numeric', month: 'short', day: 'numeric' };
-                        const formattedDate = dateObj.toLocaleDateString('en-US', options).replace(/(\w{3})\s/, '$1. ');
-                        updateDate = `(Updated: ${formattedDate})`;
+                try {
+                    const apiResponse = await fetch(GITHUB_API_URL, {
+                        cache: 'no-cache'
+                    });
+                    
+                    if (apiResponse.ok) {
+                        const commits = await apiResponse.json();
+                        if (commits && commits.length > 0) {
+                            const dateStr = commits[0].commit.author.date;
+                            const dateObj = new Date(dateStr);
+                            // Custom Format: Nov. 30, 2025
+                            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+                            const formattedDate = dateObj.toLocaleDateString('en-US', options).replace(/(\w{3})\s/, '$1. ');
+                            updateDate = `(Updated: ${formattedDate})`;
+                        }
                     }
+                } catch (apiError) {
+                    console.warn("Could not fetch commit date:", apiError);
                 }
 
             } catch (error) {
                 console.error("Error fetching version data:", error);
+                // Try to extract version from cached content if available
+                if (OPENWORSHIP_APP_SOURCE) {
+                    const versionMatch = OPENWORSHIP_APP_SOURCE.match(/v?(\d+\.\d+\.\d+)/);
+                    if (versionMatch && versionMatch[1]) {
+                        version = versionMatch[1].startsWith('v') ? versionMatch[1] : `v${versionMatch[1]}`;
+                    }
+                }
             }
             
             // --- Update All Elements ---
@@ -868,15 +921,21 @@
                 dateEl.textContent = updateDate;
             }
             
-            // Update download buttons href and download attribute (no change to download handler)
+            // Set download filename with version
+            const versionForFilename = displayVersion.replace(/\./g, '-').replace('v', '').toLowerCase();
+            DOWNLOAD_FILENAME = `Open-Worship-${versionForFilename}.html`;
+            
+            // Update download buttons href and download attribute
             const buttons = document.querySelectorAll('a[id$="-download-btn"]');
             buttons.forEach(btn => {
+                btn.setAttribute('download', DOWNLOAD_FILENAME);
                 btn.href = '#'; 
                 btn.onclick = handleDownload;
             });
             
             const panelBtn = document.getElementById('panel-download-btn');
             if (panelBtn) {
+                panelBtn.setAttribute('download', DOWNLOAD_FILENAME);
                 panelBtn.href = '#';
                 panelBtn.onclick = handleDownload;
             }
@@ -923,6 +982,11 @@
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', () => {
             fetchAndDisplayVersion();
+            
+            // Add click event listeners to all download buttons as backup
+            document.querySelectorAll('a[id$="-download-btn"]').forEach(btn => {
+                btn.addEventListener('click', handleDownload);
+            });
         });
     </script>
 </body>
