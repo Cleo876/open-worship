@@ -1,8 +1,10 @@
+[file name]: wallpaper_manager.js
+[file content begin]
 /**
  * @extension
  * @id wallpaper_manager_v1
  * @name Wallpaper Pack Manager
- * @version 1.1.4
+ * @version 1.2.0
  * @author OpenWorship Project
  */
 
@@ -14,18 +16,197 @@ function init(OW) {
     const REPO_NAME = "open-worship";
     const BASE_PATH = "Wallpapers";
     const API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${BASE_PATH}`;
+    const CACHE_DB_NAME = "wp_manager_cache";
+    const CACHE_DB_VERSION = 1;
+    const CACHE_STORE_NAME = "images";
 
     // STATE
     let currentMode = 'manager'; // 'manager' or 'picker'
     let cachedPacks = null;
+    let db = null; // IndexedDB connection
+
+    // ==========================================
+    // 0. OFFLINE STORAGE SYSTEM
+    // ==========================================
+
+    // Initialize IndexedDB for offline caching
+    async function initCacheDB() {
+        return new Promise((resolve, reject) => {
+            if (!window.indexedDB) {
+                console.warn("IndexedDB not supported, images will be streamed only");
+                resolve(null);
+                return;
+            }
+
+            const request = indexedDB.open(CACHE_DB_NAME, CACHE_DB_VERSION);
+            
+            request.onerror = () => {
+                console.error("Failed to open cache database");
+                resolve(null);
+            };
+            
+            request.onsuccess = (event) => {
+                db = event.target.result;
+                console.log("Cache database initialized");
+                resolve(db);
+            };
+            
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(CACHE_STORE_NAME)) {
+                    const store = db.createObjectStore(CACHE_STORE_NAME, { keyPath: 'url' });
+                    store.createIndex('timestamp', 'timestamp', { unique: false });
+                    console.log("Cache store created");
+                }
+            };
+        });
+    }
+
+    // Store image in cache
+    async function cacheImage(url, blob, metadata = {}) {
+        if (!db) return false;
+        
+        return new Promise((resolve) => {
+            const transaction = db.transaction([CACHE_STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(CACHE_STORE_NAME);
+            
+            const item = {
+                url: url,
+                blob: blob,
+                timestamp: Date.now(),
+                metadata: metadata,
+                lastAccessed: Date.now()
+            };
+            
+            const request = store.put(item);
+            
+            request.onsuccess = () => {
+                console.log(`Cached image: ${url}`);
+                resolve(true);
+            };
+            
+            request.onerror = () => {
+                console.error("Failed to cache image");
+                resolve(false);
+            };
+        });
+    }
+
+    // Get image from cache
+    async function getCachedImage(url) {
+        if (!db) return null;
+        
+        return new Promise((resolve) => {
+            const transaction = db.transaction([CACHE_STORE_NAME], 'readonly');
+            const store = transaction.objectStore(CACHE_STORE_NAME);
+            const request = store.get(url);
+            
+            request.onsuccess = () => {
+                if (request.result) {
+                    // Update last accessed time
+                    request.result.lastAccessed = Date.now();
+                    store.put(request.result);
+                    
+                    // Convert blob back to URL
+                    const blob = request.result.blob;
+                    const blobUrl = URL.createObjectURL(blob);
+                    resolve({
+                        url: blobUrl,
+                        cached: true,
+                        metadata: request.result.metadata
+                    });
+                } else {
+                    resolve(null);
+                }
+            };
+            
+            request.onerror = () => {
+                resolve(null);
+            };
+        });
+    }
+
+    // Clear old cache entries (keep last 50)
+    async function cleanCache() {
+        if (!db) return;
+        
+        return new Promise((resolve) => {
+            const transaction = db.transaction([CACHE_STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(CACHE_STORE_NAME);
+            const index = store.index('timestamp');
+            const request = index.openCursor(null, 'next');
+            
+            const entries = [];
+            
+            request.onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    entries.push({ key: cursor.primaryKey, timestamp: cursor.value.timestamp });
+                    cursor.continue();
+                } else {
+                    // Remove oldest entries beyond limit
+                    if (entries.length > 50) {
+                        entries.sort((a, b) => a.timestamp - b.timestamp);
+                        const toDelete = entries.slice(0, entries.length - 50);
+                        
+                        toDelete.forEach(entry => {
+                            store.delete(entry.key);
+                        });
+                        
+                        console.log(`Cleaned ${toDelete.length} old cache entries`);
+                    }
+                    resolve();
+                }
+            };
+        });
+    }
+
+    // Get image URL with caching
+    async function getImageWithCache(url, metadata = {}) {
+        // Check cache first
+        const cached = await getCachedImage(url);
+        if (cached) {
+            return cached;
+        }
+        
+        // If not in cache, fetch and cache
+        try {
+            OW.UI.showToast("Downloading image for offline use...");
+            
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            
+            // Cache the image
+            await cacheImage(url, blob, metadata);
+            
+            // Clean old cache entries
+            setTimeout(cleanCache, 1000);
+            
+            return {
+                url: blobUrl,
+                cached: false,
+                metadata: metadata
+            };
+        } catch (error) {
+            console.error("Failed to fetch image:", error);
+            throw error;
+        }
+    }
 
     // ==========================================
     // 1. INTEGRATION
     // ==========================================
 
+    // Initialize cache first
+    initCacheDB().then(() => {
+        console.log("Wallpaper Manager ready with offline support");
+    });
+
     // A. Add to Extensions Menu
     const menuName = "Wallpaper Manager";
-    // Check if menu item already exists to prevent duplicates
     const menuExists = OW.Extensions.menuItems && OW.Extensions.menuItems.some(item => item.name === menuName);
     
     if (!menuExists) {
@@ -33,14 +214,11 @@ function init(OW) {
     }
 
     // CLEANUP: Remove self from the "Loaded Modules" list in Core.
-    // The Core automatically lists all loaded extensions, which creates a duplicate/useless 
-    // entry for this extension since we added a custom menu item above.
     setTimeout(() => {
         if (OW.Extensions.loaded) {
             const myIndex = OW.Extensions.loaded.findIndex(e => e.id === "wallpaper_manager_v1");
             if (myIndex !== -1) {
                 OW.Extensions.loaded.splice(myIndex, 1);
-                // Trigger a menu refresh if the function exists
                 if (typeof OW.Extensions.updateExtensionsMenu === 'function') {
                     OW.Extensions.updateExtensionsMenu();
                 }
@@ -49,15 +227,12 @@ function init(OW) {
     }, 500);
 
     // B. Inject into Editor Toolbar
-    // We wait briefly to ensure the DOM is ready or inject immediately if present
     setTimeout(injectEditorButton, 1000);
 
     function injectEditorButton() {
         const toolbar = document.querySelector('.editor-toolbar');
         if (!toolbar) return; 
 
-        // CLEANUP: Remove ANY existing Web BG buttons (legacy or current) to prevent duplicates
-        // This handles cases where the extension is re-loaded or updated
         const existingButtons = toolbar.querySelectorAll('button');
         existingButtons.forEach(b => {
             if (b.innerText === "Web BG" || b.classList.contains('wp-web-bg-btn')) {
@@ -65,20 +240,18 @@ function init(OW) {
             }
         });
 
-        // Find the "BG Image" button group
         const groups = toolbar.querySelectorAll('.tool-group');
         let targetGroup = null;
         
-        // Look for the group containing "BG Image" text or button
         groups.forEach(g => {
             if (g.innerHTML.includes('BG Image')) targetGroup = g;
         });
 
         if (targetGroup) {
             const btn = document.createElement('button');
-            btn.className = 'wp-web-bg-btn'; // Add class for identification
+            btn.className = 'wp-web-bg-btn';
             btn.innerText = "Web BG";
-            btn.title = "Browse GitHub Wallpapers";
+            btn.title = "Browse GitHub Wallpapers (Cached Offline)";
             btn.style.marginLeft = "5px";
             btn.style.background = "linear-gradient(to bottom, #007acc, #005f9e)";
             btn.style.borderColor = "#005f9e";
@@ -90,14 +263,12 @@ function init(OW) {
         }
     }
 
-    // Attempt to inject whenever editor opens (monkey patch open method)
     if (OW.Editor && OW.Editor.open) {
-        // Only patch if we haven't already (check for a flag or unique property)
         if (!OW.Editor._wpManagerPatched) {
             const originalOpen = OW.Editor.open;
             OW.Editor.open = function(...args) {
                 originalOpen.apply(this, args);
-                setTimeout(injectEditorButton, 100); // Re-inject after render
+                setTimeout(injectEditorButton, 100);
             };
             OW.Editor._wpManagerPatched = true;
         }
@@ -139,7 +310,7 @@ function init(OW) {
             <div style="width: 800px; height: 600px; background: #1e1e1e; border: 1px solid #444; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.5);">
                 <!-- Header -->
                 <div style="padding: 15px 20px; background: #252525; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center;">
-                    <h3 style="margin: 0; color: #fff;">Wallpaper Packs <span style="font-size:0.8rem; color:#888; font-weight:normal;">(from GitHub)</span></h3>
+                    <h3 style="margin: 0; color: #fff;">Wallpaper Packs <span style="font-size:0.8rem; color:#888; font-weight:normal;">(Cached Offline)</span></h3>
                     <button id="wp-close-btn" style="background: none; border: none; color: #aaa; font-size: 1.5rem; cursor: pointer;">&times;</button>
                 </div>
                 
@@ -152,6 +323,7 @@ function init(OW) {
                 <div id="wp-footer" style="padding: 10px 20px; background: #151515; border-top: 1px solid #333; color: #666; font-size: 0.9rem; display:flex; justify-content:space-between; align-items:center;">
                     <span id="wp-breadcrumbs">Home</span>
                     <div style="display:flex; align-items:center; gap:15px;">
+                        <button id="wp-clear-cache" style="background: #444; border: 1px solid #666; color: #ddd; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Clear Cache</button>
                         <span>Source: github.com/${REPO_OWNER}/${REPO_NAME}</span>
                         <button id="wp-footer-close" style="background: #333; border: 1px solid #555; color: #ddd; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; justify-content: center;">Close</button>
                     </div>
@@ -167,6 +339,33 @@ function init(OW) {
 
         document.getElementById('wp-close-btn').onclick = closeAction;
         document.getElementById('wp-footer-close').onclick = closeAction;
+        
+        // Add cache clearing
+        document.getElementById('wp-clear-cache').onclick = clearCache;
+    }
+
+    async function clearCache() {
+        if (!db) {
+            OW.UI.showToast("No cache database found");
+            return;
+        }
+        
+        if (confirm("Clear all cached wallpapers? This will remove offline access to previously used images.")) {
+            try {
+                const request = indexedDB.deleteDatabase(CACHE_DB_NAME);
+                request.onsuccess = () => {
+                    db = null;
+                    initCacheDB();
+                    OW.UI.showToast("Cache cleared successfully");
+                };
+                request.onerror = () => {
+                    OW.UI.showToast("Failed to clear cache");
+                };
+            } catch (error) {
+                OW.UI.showToast("Error clearing cache");
+                console.error(error);
+            }
+        }
     }
 
     // ==========================================
@@ -190,7 +389,6 @@ function init(OW) {
             .then(r => r.json())
             .then(data => {
                 if (Array.isArray(data)) {
-                    // Filter for directories (Packs)
                     const folders = data.filter(item => item.type === 'dir');
                     cachedPacks = folders;
                     renderPacks(folders);
@@ -223,8 +421,6 @@ function init(OW) {
 
             card.innerHTML = `
                 <div style="height: 100px; background: #222; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #333;">
-                    <i class="fa-solid fa-folder" style="font-size: 3rem; color: #555;"></i>
-                    <!-- Placeholder for potential cover image -->
                     <div style="font-size:3rem; color:#444;">📁</div> 
                 </div>
                 <div style="padding: 10px; font-weight: bold; color: #ddd; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
@@ -249,7 +445,6 @@ function init(OW) {
             .then(r => r.json())
             .then(data => {
                 if (Array.isArray(data)) {
-                    // Filter for Images
                     const images = data.filter(item => item.name.match(/\.(png|jpg|jpeg|gif)$/i));
                     renderImages(images, folder.name);
                 }
@@ -286,9 +481,7 @@ function init(OW) {
                 overflow: hidden; position: relative;
             `;
 
-            // Use download_url for raw image
             const rawUrl = img.download_url;
-            // Get name without extension
             const imageName = img.name.replace(/\.[^/.]+$/, "");
 
             card.innerHTML = `
@@ -321,39 +514,53 @@ function init(OW) {
     }
 
     // ==========================================
-    // 4. ACTIONS
+    // 4. ACTIONS (UPDATED FOR OFFLINE USE)
     // ==========================================
 
-    function selectImageForEditor(url) {
+    async function selectImageForEditor(url) {
         if (!OW.Editor || !OW.Editor.tempSlides) {
             OW.UI.showToast("Editor not active.");
             return;
         }
 
-        OW.UI.showToast("Applying background...");
+        OW.UI.showToast("Applying background (caching for offline use)...");
         
-        // Load image to cache it and verify
-        const img = new Image();
-        img.crossOrigin = "Anonymous"; // Crucial for GitHub images
-        img.src = url;
-        
-        img.onload = () => {
-            // Apply to current slide
+        try {
+            // Get image with caching
+            const result = await getImageWithCache(url, {
+                selectedAt: Date.now(),
+                source: "github"
+            });
+            
+            // Apply cached/local URL to slide
+            OW.Editor.tempSlides[OW.Editor.currentSlideIndex].bgImage = result.url;
+            
+            // Also store the original URL as metadata for reference
+            if (!OW.Editor.tempSlides[OW.Editor.currentSlideIndex]._bgMetadata) {
+                OW.Editor.tempSlides[OW.Editor.currentSlideIndex]._bgMetadata = {};
+            }
+            OW.Editor.tempSlides[OW.Editor.currentSlideIndex]._bgMetadata.originalUrl = url;
+            OW.Editor.tempSlides[OW.Editor.currentSlideIndex]._bgMetadata.cached = result.cached;
+            OW.Editor.tempSlides[OW.Editor.currentSlideIndex]._bgMetadata.cachedAt = Date.now();
+            
+            OW.Editor.renderPreview();
+            document.getElementById(panelId).style.display = 'none';
+            OW.UI.showToast(result.cached ? "Background loaded from cache!" : "Background cached for offline use!");
+            
+        } catch (error) {
+            console.error("Failed to cache image:", error);
+            
+            // Fallback to direct URL if caching fails
+            OW.UI.showToast("Using online version (caching failed)");
             OW.Editor.tempSlides[OW.Editor.currentSlideIndex].bgImage = url;
             OW.Editor.renderPreview();
             document.getElementById(panelId).style.display = 'none';
-            OW.UI.showToast("Background Applied!");
-        };
-        
-        img.onerror = () => {
-            OW.UI.showToast("Failed to load image. Check connection.");
-        };
+        }
     }
 
     function downloadImage(url, name) {
         OW.UI.showToast("Fetching image...");
         
-        // Fetch as blob to force download instead of opening in tab
         fetch(url)
             .then(response => {
                 if (!response.ok) throw new Error("Network error");
@@ -368,13 +575,17 @@ function init(OW) {
                 link.click();
                 document.body.removeChild(link);
                 window.URL.revokeObjectURL(blobUrl);
-                OW.UI.showToast("Download started!");
+                
+                // Also cache it for future use
+                cacheImage(url, blob, { downloadedAt: Date.now() });
+                
+                OW.UI.showToast("Download started and cached!");
             })
             .catch(err => {
                 console.error("Download failed:", err);
                 OW.UI.showToast("Direct download failed. Opening in new tab.");
-                // Fallback for strict CORS environments
                 window.open(url, '_blank');
             });
     }
 }
+[file content end]
