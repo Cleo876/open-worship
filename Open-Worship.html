@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenWorship v3.2.0 - Modular</title>
+    <title>OpenWorship v3.2.1 - Modular</title>
     
     <!-- Core Configuration -->
     <script>
@@ -11,7 +11,7 @@
         // OPENWORSHIP CORE CONFIGURATION
         // ============================================
         const OPENWORSHIP_CONFIG = {
-            VERSION: '3.2.0',
+            VERSION: '3.2.1',
             GITHUB_SOURCE_URL: 'https://raw.githubusercontent.com/Cleo876/open-worship/refs/heads/main/Open-Worship.html',
             DOWNLOAD_PAGE_URL: 'https://cleo876.github.io/open-worship/',
             RESOLUTION: { width: 1920, height: 1080 },
@@ -21,6 +21,20 @@
                 FONT_SIZES: 'openworship_font_sizes',
                 EXTENSIONS: 'openworship_extensions',
                 SETTINGS: 'openworship_global_settings'
+            },
+            INDEXDB_CONFIG: {
+                DB_NAME: 'OpenWorshipDB',
+                DB_VERSION: 3,
+                STORES: {
+                    PRESENTATIONS: 'presentations',
+                    SCRIPTURE_SETTINGS: 'scripture_settings',
+                    FONT_SIZES: 'font_sizes',
+                    EXTENSIONS: 'extensions',
+                    GLOBAL_SETTINGS: 'global_settings',
+                    LIBRARY: 'library',
+                    BIBLE: 'bible',
+                    SCHEDULE: 'schedule'
+                }
             }
         };
         
@@ -32,6 +46,7 @@
             Core: null,
             UI: null,
             Data: null,
+            Storage: null,
             
             // Feature modules
             Schedule: null,
@@ -46,7 +61,8 @@
                 registry: {},
                 hooks: {},
                 loaded: [],
-                initQueue: []
+                initQueue: [],
+                menuItems: []
             },
             
             // Global state
@@ -76,7 +92,447 @@
         };
         
         // ============================================
-        // EXTENSION SYSTEM
+        // INDEXDB STORAGE MODULE (COMPLETE)
+        // ============================================
+        class IndexDBStorageModule {
+            constructor() {
+                this.db = null;
+                this.dbName = OPENWORSHIP_CONFIG.INDEXDB_CONFIG.DB_NAME;
+                this.dbVersion = OPENWORSHIP_CONFIG.INDEXDB_CONFIG.DB_VERSION;
+                this.stores = OPENWORSHIP_CONFIG.INDEXDB_CONFIG.STORES;
+            }
+            
+            async init() {
+                console.log('Initializing IndexDB Storage...');
+                
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, this.dbVersion);
+                    
+                    request.onerror = (event) => {
+                        console.error('IndexDB error:', event.target.error);
+                        reject(event.target.error);
+                    };
+                    
+                    request.onsuccess = (event) => {
+                        this.db = event.target.result;
+                        console.log('IndexDB Storage initialized successfully');
+                        resolve();
+                    };
+                    
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        
+                        // Create all object stores if they don't exist
+                        Object.values(this.stores).forEach(storeName => {
+                            if (!db.objectStoreNames.contains(storeName)) {
+                                const store = db.createObjectStore(storeName, { keyPath: 'id' });
+                                
+                                // Add appropriate indexes based on store type
+                                if (storeName === this.stores.PRESENTATIONS || 
+                                    storeName === this.stores.LIBRARY || 
+                                    storeName === this.stores.BIBLE) {
+                                    store.createIndex('type', 'type', { unique: false });
+                                    store.createIndex('title', 'title', { unique: false });
+                                } else if (storeName === this.stores.EXTENSIONS) {
+                                    store.createIndex('name', 'name', { unique: false });
+                                    store.createIndex('enabled', 'enabled', { unique: false });
+                                } else if (storeName === this.stores.SCHEDULE) {
+                                    store.createIndex('timestamp', 'timestamp', { unique: false });
+                                }
+                            }
+                        });
+                        
+                        console.log('IndexDB schema upgraded');
+                    };
+                });
+            }
+            
+            // Generic CRUD operations
+            async get(storeName, key) {
+                return new Promise((resolve, reject) => {
+                    if (!this.db) {
+                        reject(new Error('Database not initialized'));
+                        return;
+                    }
+                    
+                    const transaction = this.db.transaction([storeName], 'readonly');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.get(key);
+                    
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => resolve(request.result);
+                });
+            }
+            
+            async getAll(storeName) {
+                return new Promise((resolve, reject) => {
+                    if (!this.db) {
+                        reject(new Error('Database not initialized'));
+                        return;
+                    }
+                    
+                    const transaction = this.db.transaction([storeName], 'readonly');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.getAll();
+                    
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => resolve(request.result || []);
+                });
+            }
+            
+            async set(storeName, data) {
+                return new Promise((resolve, reject) => {
+                    if (!this.db) {
+                        reject(new Error('Database not initialized'));
+                        return;
+                    }
+                    
+                    const transaction = this.db.transaction([storeName], 'readwrite');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.put(data);
+                    
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => resolve(request.result);
+                });
+            }
+            
+            async delete(storeName, key) {
+                return new Promise((resolve, reject) => {
+                    if (!this.db) {
+                        reject(new Error('Database not initialized'));
+                        return;
+                    }
+                    
+                    const transaction = this.db.transaction([storeName], 'readwrite');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.delete(key);
+                    
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => resolve();
+                });
+            }
+            
+            async clearStore(storeName) {
+                return new Promise((resolve, reject) => {
+                    if (!this.db) {
+                        reject(new Error('Database not initialized'));
+                        return;
+                    }
+                    
+                    const transaction = this.db.transaction([storeName], 'readwrite');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.clear();
+                    
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => resolve();
+                });
+            }
+            
+            async count(storeName) {
+                return new Promise((resolve, reject) => {
+                    if (!this.db) {
+                        reject(new Error('Database not initialized'));
+                        return;
+                    }
+                    
+                    const transaction = this.db.transaction([storeName], 'readonly');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.count();
+                    
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => resolve(request.result);
+                });
+            }
+            
+            // Library operations
+            async saveLibrary(libraryItems) {
+                try {
+                    // Clear existing library items
+                    await this.clearStore(this.stores.LIBRARY);
+                    
+                    // Save each library item
+                    for (const item of libraryItems) {
+                        await this.set(this.stores.LIBRARY, {
+                            id: item.id || Date.now() + Math.random(),
+                            data: item,
+                            type: item.type,
+                            title: item.title,
+                            timestamp: Date.now()
+                        });
+                    }
+                    
+                    console.log(`Saved ${libraryItems.length} items to library`);
+                    return true;
+                } catch (error) {
+                    console.error('Error saving library to IndexDB:', error);
+                    return false;
+                }
+            }
+            
+            async loadLibrary() {
+                try {
+                    const items = await this.getAll(this.stores.LIBRARY);
+                    const library = items.map(item => item.data);
+                    console.log(`Loaded ${library.length} items from library`);
+                    return library;
+                } catch (error) {
+                    console.error('Error loading library from IndexDB:', error);
+                    return [];
+                }
+            }
+            
+            // Specific storage operations
+            async savePresentations(presentations) {
+                try {
+                    // Filter presentations from library
+                    const presItems = presentations.filter(item => item.type === 'Presentation');
+                    await this.clearStore(this.stores.PRESENTATIONS);
+                    
+                    // Save each presentation
+                    for (const presentation of presItems) {
+                        await this.set(this.stores.PRESENTATIONS, {
+                            id: presentation.id || Date.now().toString(),
+                            data: presentation,
+                            type: 'Presentation',
+                            title: presentation.title,
+                            timestamp: Date.now()
+                        });
+                    }
+                    
+                    console.log(`Saved ${presItems.length} presentations to IndexDB`);
+                    return true;
+                } catch (error) {
+                    console.error('Error saving presentations to IndexDB:', error);
+                    return false;
+                }
+            }
+            
+            async loadPresentations() {
+                try {
+                    const items = await this.getAll(this.stores.PRESENTATIONS);
+                    const presentations = items.map(item => item.data);
+                    console.log(`Loaded ${presentations.length} presentations from IndexDB`);
+                    return presentations;
+                } catch (error) {
+                    console.error('Error loading presentations from IndexDB:', error);
+                    return [];
+                }
+            }
+            
+            async saveScriptureSettings(settings) {
+                try {
+                    await this.set(this.stores.SCRIPTURE_SETTINGS, {
+                        id: 'current_settings',
+                        data: settings,
+                        timestamp: Date.now()
+                    });
+                    return true;
+                } catch (error) {
+                    console.error('Error saving scripture settings to IndexDB:', error);
+                    return false;
+                }
+            }
+            
+            async loadScriptureSettings() {
+                try {
+                    const item = await this.get(this.stores.SCRIPTURE_SETTINGS, 'current_settings');
+                    return item ? item.data : null;
+                } catch (error) {
+                    console.error('Error loading scripture settings from IndexDB:', error);
+                    return null;
+                }
+            }
+            
+            async saveFontSizes(fontSizes) {
+                try {
+                    await this.set(this.stores.FONT_SIZES, {
+                        id: 'font_sizes',
+                        data: fontSizes,
+                        timestamp: Date.now()
+                    });
+                    return true;
+                } catch (error) {
+                    console.error('Error saving font sizes to IndexDB:', error);
+                    return false;
+                }
+            }
+            
+            async loadFontSizes() {
+                try {
+                    const item = await this.get(this.stores.FONT_SIZES, 'font_sizes');
+                    return item ? item.data : null;
+                } catch (error) {
+                    console.error('Error loading font sizes from IndexDB:', error);
+                    return null;
+                }
+            }
+            
+            async saveExtensions(extensions) {
+                try {
+                    // Clear existing extensions
+                    await this.clearStore(this.stores.EXTENSIONS);
+                    
+                    // Save each extension
+                    for (const ext of extensions) {
+                        await this.set(this.stores.EXTENSIONS, {
+                            id: ext.id,
+                            name: ext.name,
+                            version: ext.version,
+                            code: ext.code,
+                            enabled: ext.enabled !== false,
+                            initialized: ext.initialized || false,
+                            timestamp: Date.now()
+                        });
+                    }
+                    
+                    console.log(`Saved ${extensions.length} extensions to IndexDB`);
+                    return true;
+                } catch (error) {
+                    console.error('Error saving extensions to IndexDB:', error);
+                    return false;
+                }
+            }
+            
+            async loadExtensions() {
+                try {
+                    const items = await this.getAll(this.stores.EXTENSIONS);
+                    console.log(`Loaded ${items.length} extensions from IndexDB`);
+                    return items;
+                } catch (error) {
+                    console.error('Error loading extensions from IndexDB:', error);
+                    return [];
+                }
+            }
+            
+            async deleteExtension(extensionId) {
+                try {
+                    await this.delete(this.stores.EXTENSIONS, extensionId);
+                    console.log(`Deleted extension ${extensionId} from IndexDB`);
+                    return true;
+                } catch (error) {
+                    console.error('Error deleting extension from IndexDB:', error);
+                    return false;
+                }
+            }
+            
+            // Bible operations
+            async saveBible(bibleItems) {
+                try {
+                    await this.clearStore(this.stores.BIBLE);
+                    
+                    for (const item of bibleItems) {
+                        await this.set(this.stores.BIBLE, {
+                            id: item.id,
+                            data: item,
+                            type: 'Scripture',
+                            title: item.title,
+                            timestamp: Date.now()
+                        });
+                    }
+                    
+                    console.log(`Saved ${bibleItems.length} bible verses to IndexDB`);
+                    return true;
+                } catch (error) {
+                    console.error('Error saving bible to IndexDB:', error);
+                    return false;
+                }
+            }
+            
+            async loadBible() {
+                try {
+                    const items = await this.getAll(this.stores.BIBLE);
+                    const bible = items.map(item => item.data);
+                    console.log(`Loaded ${bible.length} bible verses from IndexDB`);
+                    return bible;
+                } catch (error) {
+                    console.error('Error loading bible from IndexDB:', error);
+                    return [];
+                }
+            }
+            
+            // Schedule operations
+            async saveSchedule(scheduleItems) {
+                try {
+                    await this.clearStore(this.stores.SCHEDULE);
+                    
+                    for (const item of scheduleItems) {
+                        await this.set(this.stores.SCHEDULE, {
+                            id: item.id || Date.now() + Math.random(),
+                            data: item,
+                            type: item.type,
+                            title: item.title,
+                            timestamp: Date.now()
+                        });
+                    }
+                    
+                    console.log(`Saved ${scheduleItems.length} schedule items to IndexDB`);
+                    return true;
+                } catch (error) {
+                    console.error('Error saving schedule to IndexDB:', error);
+                    return false;
+                }
+            }
+            
+            async loadSchedule() {
+                try {
+                    const items = await this.getAll(this.stores.SCHEDULE);
+                    const schedule = items.map(item => item.data);
+                    console.log(`Loaded ${schedule.length} schedule items from IndexDB`);
+                    return schedule;
+                } catch (error) {
+                    console.error('Error loading schedule from IndexDB:', error);
+                    return [];
+                }
+            }
+            
+            async clearAllData() {
+                try {
+                    for (const storeName of Object.values(this.stores)) {
+                        await this.clearStore(storeName);
+                    }
+                    console.log('Cleared all data from IndexDB');
+                    return true;
+                } catch (error) {
+                    console.error('Error clearing IndexDB:', error);
+                    return false;
+                }
+            }
+            
+            // Backup and restore
+            async exportDatabase() {
+                try {
+                    const exportData = {};
+                    for (const storeName of Object.values(this.stores)) {
+                        const items = await this.getAll(storeName);
+                        exportData[storeName] = items;
+                    }
+                    return exportData;
+                } catch (error) {
+                    console.error('Error exporting database:', error);
+                    return null;
+                }
+            }
+            
+            async importDatabase(data) {
+                try {
+                    for (const storeName of Object.values(this.stores)) {
+                        if (data[storeName] && Array.isArray(data[storeName])) {
+                            await this.clearStore(storeName);
+                            for (const item of data[storeName]) {
+                                await this.set(storeName, item);
+                            }
+                        }
+                    }
+                    return true;
+                } catch (error) {
+                    console.error('Error importing database:', error);
+                    return false;
+                }
+            }
+        }
+        
+        // ============================================
+        // ENHANCED EXTENSION SYSTEM WITH INDEXDB
         // ============================================
         class ExtensionSystem {
             constructor() {
@@ -97,10 +553,11 @@
                 };
                 this.loaded = [];
                 this.menuItems = [];
+                this.marketplaceAdded = false;
             }
             
             // Register an extension
-            register(extension) {
+            async register(extension) {
                 if (!extension.id || !extension.name) {
                     console.error('Extension must have id and name');
                     return false;
@@ -113,6 +570,12 @@
                 };
                 
                 console.log(`Registered extension: ${extension.name}`);
+                
+                // Save to IndexDB
+                if (OpenWorship.Storage) {
+                    await this.saveExtensionsToStorage();
+                }
+                
                 return true;
             }
             
@@ -145,36 +608,34 @@
                     const response = await fetch(url);
                     const script = await response.text();
                     
-                    // Create a module context
-                    const moduleCode = `
-                        (function(OpenWorship, extension) {
-                            ${script}
-                        })(OpenWorship, extension);
-                    `;
-                    
                     // Create extension object
                     const extension = {
                         id: `external_${Date.now()}`,
                         name: url.split('/').pop().replace('.js', ''),
                         version: '1.0.0',
+                        filename: url.split('/').pop(),
+                        code: script,
                         init: null
                     };
                     
-                    // Execute in isolated context
-                    const scriptEl = document.createElement('script');
-                    scriptEl.textContent = moduleCode;
-                    document.head.appendChild(scriptEl);
-                    document.head.removeChild(scriptEl);
-                    
-                    if (extension.init && typeof extension.init === 'function') {
-                        extension.init(OpenWorship);
-                        extension.initialized = true;
-                        this.loaded.push(extension);
-                        this.trigger('extension:loaded', extension);
-                        console.log(`Loaded extension: ${extension.name}`);
+                    // Parse the extension
+                    const extensionObj = this.parseExtension(extension.filename, extension.code);
+                    if (extensionObj) {
+                        await this.register(extensionObj);
+                        if (extensionObj.init && typeof extensionObj.init === 'function') {
+                            extensionObj.init(OpenWorship);
+                            extensionObj.initialized = true;
+                            this.loaded.push(extensionObj);
+                            this.trigger('extension:loaded', extensionObj);
+                            console.log(`Loaded extension: ${extensionObj.name}`);
+                            
+                            // Save to IndexDB
+                            await this.saveExtensionsToStorage();
+                        }
+                        return extensionObj;
                     }
                     
-                    return extension;
+                    return null;
                 } catch (error) {
                     console.error(`Failed to load extension from ${url}:`, error);
                     return null;
@@ -190,14 +651,14 @@
                         const content = await this.readFileAsText(file);
                         const extension = this.parseExtension(file.name, content);
                         if (extension) {
-                            this.register(extension);
+                            await this.register(extension);
                             extensions.push(extension);
                         }
                     }
                 }
                 
                 // Initialize extensions
-                extensions.forEach(ext => {
+                for (const ext of extensions) {
                     if (ext.init && typeof ext.init === 'function') {
                         try {
                             ext.init(OpenWorship);
@@ -208,7 +669,10 @@
                             console.error(`Failed to initialize extension ${ext.name}:`, error);
                         }
                     }
-                });
+                }
+                
+                // Save all extensions to IndexDB
+                await this.saveExtensionsToStorage();
                 
                 return extensions;
             }
@@ -247,19 +711,16 @@
                         version: metadata.version || '1.0.0',
                         author: metadata.author || 'Unknown',
                         filename: filename,
-                        content: content,
+                        code: content,
                         init: null
                     };
                     
                     // Wrap the content in a function to capture init
-                    const initFunction = new Function('OpenWorship', `
-                        const module = {};
-                        ${content}
-                        if (typeof init === 'function') {
-                            return init;
-                        }
-                        return null;
-                    `);
+                    const initFunction = new Function('OpenWorship', 
+                        'const module = {};\n' + 
+                        content + 
+                        '\nif (typeof init === "function") { return init; } return null;'
+                    );
                     
                     extension.init = initFunction(OpenWorship);
                     
@@ -270,10 +731,22 @@
                 }
             }
             
-            // Add menu item for extensions
-            addExtensionMenuItem(name, callback) {
-                this.menuItems.push({ name, callback });
-                this.updateExtensionsMenu();
+            // Add menu item for extensions - PREVENT DUPLICATES
+            addExtensionMenuItem(name, callback, uniqueId = null) {
+                // Check if this exact menu item already exists
+                const exists = this.menuItems.some(item => 
+                    item.name === name && 
+                    (uniqueId ? item.uniqueId === uniqueId : true)
+                );
+                
+                if (!exists) {
+                    this.menuItems.push({ 
+                        name, 
+                        callback, 
+                        uniqueId: uniqueId || name 
+                    });
+                    this.updateExtensionsMenu();
+                }
             }
             
             // Update extensions menu - FIXED VERSION
@@ -294,23 +767,8 @@
                 });
                 itemsToRemove.forEach(item => item.remove());
                 
-                // First, add extension menu items (added via addExtensionMenuItem)
-                this.menuItems.forEach(menuItem => {
-                    const item = document.createElement('div');
-                    item.textContent = menuItem.name;
-                    item.onclick = menuItem.callback;
-                    dropdown.appendChild(item);
-                });
-                
-                // Then, add loaded extensions (if any)
+                // First, add loaded extensions (if any)
                 if (this.loaded.length > 0) {
-                    // Add separator if we have both menu items and loaded extensions
-                    if (this.menuItems.length > 0) {
-                        const separator = document.createElement('div');
-                        separator.className = 'separator';
-                        dropdown.appendChild(separator);
-                    }
-                    
                     this.loaded.forEach(ext => {
                         const item = document.createElement('div');
                         item.textContent = ext.name;
@@ -321,10 +779,25 @@
                         };
                         dropdown.appendChild(item);
                     });
+                    
+                    // Add separator if we have any extensions
+                    if (this.loaded.length > 0) {
+                        const separator = document.createElement('div');
+                        separator.className = 'separator';
+                        dropdown.appendChild(separator);
+                    }
                 }
                 
+                // Then, add extension menu items (added via addExtensionMenuItem)
+                this.menuItems.forEach(menuItem => {
+                    const item = document.createElement('div');
+                    item.textContent = menuItem.name;
+                    item.onclick = menuItem.callback;
+                    dropdown.appendChild(item);
+                });
+                
                 // Add separator if we have any items above
-                if (this.menuItems.length > 0 || this.loaded.length > 0) {
+                if (this.loaded.length > 0 || this.menuItems.length > 0) {
                     const separator = document.createElement('div');
                     separator.className = 'separator';
                     dropdown.appendChild(separator);
@@ -341,6 +814,167 @@
                 folderItem.textContent = 'Load Folder...';
                 folderItem.onclick = () => document.getElementById('folderInput').click();
                 dropdown.appendChild(folderItem);
+                
+                // Add "Manage Extensions" item
+                const manageItem = document.createElement('div');
+                manageItem.textContent = 'Manage Installed Extensions...';
+                manageItem.onclick = () => this.showExtensionManager();
+                dropdown.appendChild(manageItem);
+                
+                // Add "Clear All Extensions" item
+                const clearItem = document.createElement('div');
+                clearItem.textContent = 'Clear All Extensions';
+                clearItem.style.color = '#d32f2f';
+                clearItem.onclick = async () => {
+                    if (confirm('Are you sure you want to clear all extensions? This will remove all installed extensions.')) {
+                        await this.clearAllExtensions();
+                        OpenWorship.UI.showToast('All extensions cleared');
+                    }
+                };
+                dropdown.appendChild(clearItem);
+            }
+            
+            async showExtensionManager() {
+                // Create a simple extension manager modal
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.8);
+                    z-index: 10000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                `;
+                
+                let extensionsList = '';
+                this.loaded.forEach(ext => {
+                    extensionsList += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #333;">
+                            <div>
+                                <strong>${ext.name}</strong><br>
+                                <small style="color: #888;">v${ext.version} by ${ext.author || 'Unknown'}</small>
+                            </div>
+                            <button onclick="OpenWorship.Extensions.uninstallExtension('${ext.id}')" 
+                                    style="background: #d32f2f; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
+                                Remove
+                            </button>
+                        </div>
+                    `;
+                });
+                
+                modal.innerHTML = `
+                    <div style="background: #222; border: 1px solid #444; border-radius: 8px; padding: 20px; width: 500px; max-height: 80vh; overflow-y: auto;">
+                        <h3 style="margin-top: 0; color: #eee;">Installed Extensions (${this.loaded.length})</h3>
+                        <div style="margin-bottom: 20px;">
+                            ${this.loaded.length > 0 ? extensionsList : '<p style="color: #888;">No extensions installed</p>'}
+                        </div>
+                        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                            <button onclick="this.closest('.modal-overlay').remove()" 
+                                    style="background: #555; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                modal.className = 'modal-overlay';
+                document.body.appendChild(modal);
+                
+                // Close on click outside
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.remove();
+                    }
+                });
+            }
+            
+            async uninstallExtension(extensionId) {
+                try {
+                    // Remove from registry
+                    if (this.registry[extensionId]) {
+                        delete this.registry[extensionId];
+                    }
+                    
+                    // Remove from loaded array
+                    const extIndex = this.loaded.findIndex(e => e.id === extensionId);
+                    if (extIndex !== -1) {
+                        const extName = this.loaded[extIndex].name;
+                        this.loaded.splice(extIndex, 1);
+                        
+                        // Delete from IndexDB
+                        if (OpenWorship.Storage) {
+                            await OpenWorship.Storage.deleteExtension(extensionId);
+                        }
+                        
+                        // Update menu
+                        this.updateExtensionsMenu();
+                        
+                        // Show toast
+                        if (OpenWorship.UI && OpenWorship.UI.showToast) {
+                            OpenWorship.UI.showToast(`Removed extension: ${extName}`);
+                        }
+                        
+                        // Close modal if open
+                        const modal = document.querySelector('.modal-overlay');
+                        if (modal) {
+                            modal.remove();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error uninstalling extension:', error);
+                    if (OpenWorship.UI && OpenWorship.UI.showToast) {
+                        OpenWorship.UI.showToast('Error removing extension');
+                    }
+                }
+            }
+            
+            async saveExtensionsToStorage() {
+                try {
+                    const extensions = this.loaded.map(ext => ({
+                        id: ext.id,
+                        name: ext.name,
+                        version: ext.version,
+                        code: ext.code,
+                        enabled: true,
+                        initialized: ext.initialized || false
+                    }));
+                    
+                    if (OpenWorship.Storage) {
+                        await OpenWorship.Storage.saveExtensions(extensions);
+                        console.log(`Saved ${extensions.length} extensions to IndexDB`);
+                        return true;
+                    }
+                    return false;
+                } catch (error) {
+                    console.error('Error saving extensions to IndexDB:', error);
+                    return false;
+                }
+            }
+            
+            async clearAllExtensions() {
+                try {
+                    // Clear from memory
+                    this.registry = {};
+                    this.loaded = [];
+                    this.menuItems = [];
+                    
+                    // Clear from IndexDB
+                    if (OpenWorship.Storage) {
+                        await OpenWorship.Storage.clearStore('extensions');
+                    }
+                    
+                    // Update menu
+                    this.updateExtensionsMenu();
+                    
+                    return true;
+                } catch (error) {
+                    console.error('Error clearing extensions:', error);
+                    return false;
+                }
             }
         }
         
@@ -362,17 +996,24 @@
                 
                 console.log('Initializing OpenWorship Core...');
                 
+                // Initialize IndexDB first
+                OpenWorship.Storage = new IndexDBStorageModule();
+                await OpenWorship.Storage.init();
+                
                 // Initialize all core modules
                 await this.initializeModules();
                 
                 // Load saved data
-                this.loadSavedData();
+                await this.loadSavedData();
                 
                 // Set up event listeners
                 this.setupGlobalEvents();
                 
                 // Check for updates
                 this.checkForUpdates();
+                
+                // Initialize integrated marketplace
+                this.initializeIntegratedMarketplace();
                 
                 this.initialized = true;
                 console.log('OpenWorship Core initialized');
@@ -412,43 +1053,85 @@
                 }
             }
             
-            loadSavedData() {
-                // Load presentations
+            async loadSavedData() {
                 try {
-                    const saved = localStorage.getItem(OPENWORSHIP_CONFIG.STORAGE_KEYS.PRESENTATIONS);
-                    if (saved) {
-                        const presentations = JSON.parse(saved);
-                        OpenWorship.State.library = OpenWorship.State.library.filter(item => item.type !== 'Presentation');
-                        presentations.forEach(presentation => {
-                            if (!presentation.id) presentation.id = Date.now() + Math.random();
-                            OpenWorship.State.library.push(presentation);
-                        });
-                        console.log(`Loaded ${presentations.length} presentations from storage`);
+                    // Load library from IndexDB
+                    const library = await OpenWorship.Storage.loadLibrary();
+                    if (library.length > 0) {
+                        OpenWorship.State.library = library;
+                        console.log(`Loaded ${library.length} items from library`);
                     }
-                } catch (error) {
-                    console.error('Error loading presentations:', error);
-                }
-                
-                // Load scripture settings
-                try {
-                    const saved = localStorage.getItem(OPENWORSHIP_CONFIG.STORAGE_KEYS.SCRIPTURE_SETTINGS);
-                    if (saved) {
-                        const settings = JSON.parse(saved);
+                    
+                    // Load presentations from IndexDB
+                    const presentations = await OpenWorship.Storage.loadPresentations();
+                    if (presentations.length > 0) {
+                        // Ensure presentations are in library
+                        presentations.forEach(presentation => {
+                            if (!OpenWorship.State.library.find(item => item.id === presentation.id)) {
+                                OpenWorship.State.library.push(presentation);
+                            }
+                        });
+                        console.log(`Loaded ${presentations.length} presentations from IndexDB`);
+                    }
+                    
+                    // Load bible from IndexDB
+                    const bible = await OpenWorship.Storage.loadBible();
+                    if (bible.length > 0) {
+                        OpenWorship.State.bibleLibrary = bible;
+                        console.log(`Loaded ${bible.length} bible verses from IndexDB`);
+                    }
+                    
+                    // Load schedule from IndexDB
+                    const schedule = await OpenWorship.Storage.loadSchedule();
+                    if (schedule.length > 0) {
+                        OpenWorship.State.schedule = schedule;
+                        console.log(`Loaded ${schedule.length} schedule items from IndexDB`);
+                    }
+                    
+                    // Load scripture settings from IndexDB
+                    const settings = await OpenWorship.Storage.loadScriptureSettings();
+                    if (settings) {
                         OpenWorship.State.scriptureSettings = { ...OpenWorship.State.scriptureSettings, ...settings };
                     }
-                } catch (error) {
-                    console.error('Error loading scripture settings:', error);
-                }
-                
-                // Load font sizes
-                try {
-                    const saved = localStorage.getItem(OPENWORSHIP_CONFIG.STORAGE_KEYS.FONT_SIZES);
-                    if (saved) {
-                        const sizes = JSON.parse(saved);
-                        OpenWorship.State.customFontSizes = { ...OpenWorship.State.customFontSizes, ...sizes };
+                    
+                    // Load font sizes from IndexDB
+                    const fontSizes = await OpenWorship.Storage.loadFontSizes();
+                    if (fontSizes) {
+                        OpenWorship.State.customFontSizes = fontSizes;
+                        if (OpenWorship.Editor) {
+                            OpenWorship.Editor.updateSizeDatalist();
+                        }
                     }
+                    
+                    // Load extensions from IndexDB
+                    const savedExtensions = await OpenWorship.Storage.loadExtensions();
+                    savedExtensions.forEach(ext => {
+                        if (ext.enabled && ext.code) {
+                            try {
+                                // Parse and register the extension
+                                const extension = OpenWorship.Extensions.parseExtension(ext.name + '.js', ext.code);
+                                if (extension && extension.init) {
+                                    OpenWorship.Extensions.register(extension);
+                                    if (!ext.initialized) {
+                                        extension.init(OpenWorship);
+                                        extension.initialized = true;
+                                    }
+                                    OpenWorship.Extensions.loaded.push(extension);
+                                }
+                            } catch (e) {
+                                console.error(`Error loading extension ${ext.name}:`, e);
+                            }
+                        }
+                    });
+                    
+                    // Update UI if needed
+                    if (OpenWorship.UI) {
+                        OpenWorship.UI.showToast('Data loaded from IndexedDB');
+                    }
+                    
                 } catch (error) {
-                    console.error('Error loading font sizes:', error);
+                    console.error('Error loading saved data:', error);
+                    OpenWorship.UI.showToast('Error loading saved data');
                 }
             }
             
@@ -508,6 +1191,77 @@
                     if (parts1[i] < parts2[i]) return -1;
                 }
                 return 0;
+            }
+            
+            initializeIntegratedMarketplace() {
+                // Add integrated marketplace to menu
+                OpenWorship.Extensions.addExtensionMenuItem("📦 Extension Marketplace", () => {
+                    // Create marketplace modal
+                    const modal = document.createElement('div');
+                    modal.id = 'marketplace-modal';
+                    modal.style.cssText = `
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(0,0,0,0.9);
+                        z-index: 10000;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-family: 'Segoe UI', sans-serif;
+                    `;
+                    
+                    modal.innerHTML = `
+                        <div style="width: 800px; height: 600px; background: #1e1e1e; border: 1px solid #444; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.7);">
+                            <div style="padding: 15px 20px; background: #252525; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center;">
+                                <h3 style="margin: 0; color: #fff;">Extension Marketplace</h3>
+                                <button id="mp-close" style="background: none; border: none; color: #aaa; font-size: 1.8rem; cursor: pointer; line-height: 1; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
+                            </div>
+                            
+                            <div style="flex: 1; overflow-y: auto; padding: 20px;">
+                                <div style="text-align: center; padding: 40px 20px; color: #888;">
+                                    <div style="font-size: 3rem; margin-bottom: 20px;">🛒</div>
+                                    <h3 style="color: #ddd;">Extension Marketplace</h3>
+                                    <p>Browse and install extensions from the official repository.</p>
+                                    <button onclick="window.open('https://github.com/Cleo876/open-worship/tree/main/Extensions', '_blank')" 
+                                            style="background: #007acc; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-top: 20px;">
+                                        Visit GitHub Repository
+                                    </button>
+                                    <div style="margin-top: 30px; color: #666; font-size: 0.9rem;">
+                                        <p>Currently installed: <strong>${OpenWorship.Extensions.loaded.length}</strong> extensions</p>
+                                        <button onclick="OpenWorship.Extensions.showExtensionManager()" 
+                                                style="background: #333; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-top: 10px;">
+                                            Manage Installed Extensions
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="padding: 10px 20px; background: #151515; border-top: 1px solid #333; color: #666; font-size: 0.8rem;">
+                                <div>OpenWorship Extension System v${OPENWORSHIP_CONFIG.VERSION}</div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(modal);
+                    
+                    // Close button
+                    document.getElementById('mp-close').onclick = () => {
+                        modal.remove();
+                    };
+                    
+                    // Close on click outside
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) {
+                            modal.remove();
+                        }
+                    });
+                }, 'marketplace_unique');
+                
+                // Update extensions menu
+                OpenWorship.Extensions.updateExtensionsMenu();
             }
             
             // Event system
@@ -623,20 +1377,20 @@
                 this.localFontData = {};
             }
             
-            init() {
+            async init() {
                 console.log('Data Module initialized');
                 return Promise.resolve();
             }
             
-            savePresentationsToStorage() {
+            async savePresentationsToStorage() {
                 try {
                     const presentations = OpenWorship.State.library.filter(item => item.type === 'Presentation');
-                    localStorage.setItem(OPENWORSHIP_CONFIG.STORAGE_KEYS.PRESENTATIONS, JSON.stringify(presentations));
+                    await OpenWorship.Storage.savePresentations(presentations);
                     OpenWorship.State.presentationsModified = false;
-                    console.log(`Saved ${presentations.length} presentations to storage`);
+                    OpenWorship.UI.showToast(`Saved ${presentations.length} presentations`);
                 } catch (error) {
                     console.error('Error saving presentations to storage:', error);
-                    OpenWorship.UI.showToast('Error saving presentations to browser storage');
+                    OpenWorship.UI.showToast('Error saving presentations to storage');
                 }
             }
             
@@ -644,10 +1398,9 @@
                 OpenWorship.State.presentationsModified = true;
             }
             
-            saveScriptureSettings() {
+            async saveScriptureSettings() {
                 try {
-                    localStorage.setItem(OPENWORSHIP_CONFIG.STORAGE_KEYS.SCRIPTURE_SETTINGS, 
-                        JSON.stringify(OpenWorship.State.scriptureSettings));
+                    await OpenWorship.Storage.saveScriptureSettings(OpenWorship.State.scriptureSettings);
                     OpenWorship.UI.showToast('Scripture display settings saved!');
                     
                     // Update any live scripture display
@@ -660,13 +1413,53 @@
                 }
             }
             
-            saveCustomFontSizes() {
+            async saveCustomFontSizes() {
                 try {
-                    localStorage.setItem(OPENWORSHIP_CONFIG.STORAGE_KEYS.FONT_SIZES, 
-                        JSON.stringify(OpenWorship.State.customFontSizes));
+                    await OpenWorship.Storage.saveFontSizes(OpenWorship.State.customFontSizes);
                     OpenWorship.Editor.updateSizeDatalist();
                 } catch (error) {
                     console.error('Error saving font sizes:', error);
+                }
+            }
+
+            async saveLibrary() {
+                try {
+                    await OpenWorship.Storage.saveLibrary(OpenWorship.State.library);
+                    console.log('Library saved to IndexDB');
+                } catch (error) {
+                    console.error('Error saving library:', error);
+                }
+            }
+
+            async saveBible() {
+                try {
+                    await OpenWorship.Storage.saveBible(OpenWorship.State.bibleLibrary);
+                    console.log('Bible saved to IndexDB');
+                } catch (error) {
+                    console.error('Error saving bible:', error);
+                }
+            }
+
+            async saveSchedule() {
+                try {
+                    await OpenWorship.Storage.saveSchedule(OpenWorship.State.schedule);
+                    console.log('Schedule saved to IndexDB');
+                } catch (error) {
+                    console.error('Error saving schedule:', error);
+                }
+            }
+
+            async saveAllData() {
+                try {
+                    await this.saveLibrary();
+                    await this.saveBible();
+                    await this.saveSchedule();
+                    await this.saveScriptureSettings();
+                    await this.saveCustomFontSizes();
+                    OpenWorship.UI.showToast('All data saved to IndexedDB');
+                } catch (error) {
+                    console.error('Error saving all data:', error);
+                    OpenWorship.UI.showToast('Error saving data');
                 }
             }
             
@@ -685,13 +1478,15 @@
                 }
 
                 const reader = new FileReader();
-                reader.onload = (e) => {
+                reader.onload = async (e) => {
                     try {
                         const data = JSON.parse(e.target.result);
                         if (!Array.isArray(data)) throw new Error("Invalid format structure");
                         
                         if (isBible) {
                             OpenWorship.State.bibleLibrary = data;
+                            // Save to IndexDB
+                            await this.saveBible();
                             if (OpenWorship.State.currentTab === 'Scripture') {
                                 OpenWorship.Library.render();
                             }
@@ -699,6 +1494,9 @@
                         } else if (isHymn || (fileName.endsWith('.json') && data.every(item => item.type === 'Song' || item.type === 'Presentation'))) {
                             const newItems = data.filter(item => item.type === 'Song' || item.type === 'Presentation');
                             OpenWorship.State.library = [...OpenWorship.State.library, ...newItems];
+                            
+                            // Save to IndexDB
+                            await this.saveLibrary();
                             
                             if (OpenWorship.State.currentTab === 'Song' || OpenWorship.State.currentTab === 'Presentation') {
                                 OpenWorship.Library.render();
@@ -710,7 +1508,7 @@
                             const presentationCount = newItems.filter(item => item.type === 'Presentation').length;
                             if (presentationCount > 0) {
                                 this.markPresentationsModified();
-                                this.savePresentationsToStorage();
+                                await this.savePresentationsToStorage();
                             }
                         } else {
                             OpenWorship.UI.showToast("Could not determine content type. Loaded nothing.");
@@ -738,6 +1536,39 @@
                     };
                     img.onerror = () => resolve(null);
                 });
+            }
+            
+            // Database management methods
+            async exportDatabase() {
+                try {
+                    const data = await OpenWorship.Storage.exportDatabase();
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `OpenWorship_Backup_${new Date().toISOString().slice(0,10)}.owbackup`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    OpenWorship.UI.showToast('Database exported successfully!');
+                } catch (error) {
+                    console.error('Error exporting database:', error);
+                    OpenWorship.UI.showToast('Error exporting database');
+                }
+            }
+            
+            async clearDatabase() {
+                if (confirm('WARNING: This will delete ALL data including presentations, songs, scriptures, and settings. Are you absolutely sure?')) {
+                    try {
+                        await OpenWorship.Storage.clearAllData();
+                        OpenWorship.UI.showToast('Database cleared!');
+                        location.reload();
+                    } catch (error) {
+                        console.error('Error clearing database:', error);
+                        OpenWorship.UI.showToast('Error clearing database');
+                    }
+                }
             }
         }
         
@@ -876,14 +1707,16 @@
                 OpenWorship.UI.showToast("Schedule Saved!");
             }
             
-            load(input) {
+            async load(input) {
                 if (input.files[0]) {
                     const reader = new FileReader();
-                    reader.onload = (e) => {
+                    reader.onload = async (e) => {
                         try {
                             const data = JSON.parse(e.target.result);
                             if (Array.isArray(data)) {
                                 OpenWorship.State.schedule = data;
+                                // Save to IndexDB
+                                await OpenWorship.Data.saveSchedule();
                                 this.render();
                                 OpenWorship.UI.showToast("Schedule Loaded Successfully!");
                             } else {
@@ -899,7 +1732,7 @@
         }
         
         // ============================================
-        // LIBRARY MODULE
+        // LIBRARY MODULE (FIXED REMOVE ISSUE)
         // ============================================
         class LibraryModule {
             constructor() {
@@ -1218,6 +2051,9 @@
             
             showContextMenu(e, context, index, item) {
                 e.preventDefault();
+                e.stopPropagation();
+                
+                // Store the original index from the source array
                 this.rightClickedItem = { context, index, item };
                 
                 const menu = document.getElementById('contextMenu');
@@ -1228,14 +2064,24 @@
                 const removeBtn = document.getElementById('ctxRemove');
                 const renameBtn = document.getElementById('ctxRename');
                 
+                // Show remove button for schedule items or presentation items in library
                 if (context === 'schedule') {
                     removeBtn.style.display = 'block';
+                    removeBtn.onclick = () => {
+                        menu.style.display = 'none';
+                        this.removeItem();
+                    };
                 } else if (context === 'library' && item.type === 'Presentation') {
                     removeBtn.style.display = 'block';
+                    removeBtn.onclick = () => {
+                        menu.style.display = 'none';
+                        this.removeItem();
+                    };
                 } else {
                     removeBtn.style.display = 'none';
                 }
                 
+                // Always show rename button
                 renameBtn.style.display = 'block';
                 renameBtn.onclick = () => {
                     menu.style.display = 'none';
@@ -1248,27 +2094,72 @@
             }
             
             removeItem() {
+                if (!this.rightClickedItem) return;
+                
                 const { context, index, item } = this.rightClickedItem;
                 
                 if (context === 'schedule') {
-                    OpenWorship.State.schedule.splice(index, 1);
-                    OpenWorship.Schedule.render();
-                } else if (context === 'library') {
-                    // If removing a presentation, mark as modified
-                    if (item.type === 'Presentation') {
-                        OpenWorship.Data.markPresentationsModified();
+                    // Find the exact item by id in case indices have changed
+                    const scheduleIndex = OpenWorship.State.schedule.findIndex(i => i.id === item.id);
+                    if (scheduleIndex !== -1) {
+                        OpenWorship.State.schedule.splice(scheduleIndex, 1);
+                        OpenWorship.Schedule.render();
+                        OpenWorship.UI.showToast('Item removed from schedule');
                     }
-                    
-                    OpenWorship.State.library.splice(index, 1);
-                    this.render();
-                    
-                    // Save presentations to storage if one was removed
-                    if (item.type === 'Presentation') {
-                        OpenWorship.Data.savePresentationsToStorage();
+                } else if (context === 'library') {
+                    // Find the exact item by id in case indices have changed
+                    const libraryIndex = OpenWorship.State.library.findIndex(i => i.id === item.id);
+                    if (libraryIndex !== -1) {
+                        // If removing a presentation, mark as modified
+                        if (item.type === 'Presentation') {
+                            OpenWorship.Data.markPresentationsModified();
+                        }
+                        
+                        OpenWorship.State.library.splice(libraryIndex, 1);
+                        this.render();
+                        
+                        // Save presentations to storage if one was removed
+                        if (item.type === 'Presentation') {
+                            OpenWorship.Data.savePresentationsToStorage();
+                        }
+                        
+                        OpenWorship.UI.showToast(`${item.type} removed from library`);
                     }
                 }
                 
+                // Hide context menu
                 document.getElementById('contextMenu').style.display = 'none';
+                this.rightClickedItem = null;
+            }
+            
+            // Add missing dropOnLibrary method
+            dropOnLibrary(e) {
+                e.preventDefault();
+                const { source, index, item } = OpenWorship.State.dragState;
+
+                if (source === 'schedule' && item) {
+                    // Clone item to library
+                    const clone = JSON.parse(JSON.stringify(item));
+                    clone.id = Date.now() + Math.random();
+
+                    if (OpenWorship.State.currentTab === 'Presentation' && item.type !== 'Presentation') {
+                        // Convert to presentation if dropped in presentation tab
+                        clone.type = 'Presentation';
+                        clone.title = clone.title + ' (Converted)';
+                    }
+
+                    OpenWorship.State.library.push(clone);
+                    this.render();
+
+                    // If it's a presentation, mark as modified
+                    if (clone.type === 'Presentation') {
+                        OpenWorship.Data.markPresentationsModified();
+                    }
+
+                    OpenWorship.UI.showToast(`Added to ${OpenWorship.State.currentTab} library`);
+                }
+
+                OpenWorship.Schedule.resetDrag();
             }
         }
         
@@ -2433,10 +3324,6 @@
             OpenWorship.Projector.handleLogoUpload(input);
         }
         
-        function handleContentLoad(input) {
-            OpenWorship.Data.handleContentLoad(input);
-        }
-        
         function handleScheduleLoad(input) {
             OpenWorship.Schedule.load(input);
         }
@@ -2477,7 +3364,7 @@
                             OpenWorship.State.library.push(newPres);
                         });
                         
-                        // Save to localStorage
+                        // Save to IndexDB
                         OpenWorship.Data.savePresentationsToStorage();
                         
                         // Refresh library view
@@ -2535,6 +3422,25 @@
                         OpenWorship.UI.showToast("Error loading folder: " + error.message);
                     });
             }
+        }
+        
+        function importDatabase(input) {
+            if (!input.files[0]) return;
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (confirm('This will replace all current data. Are you sure?')) {
+                        await OpenWorship.Storage.importDatabase(data);
+                        OpenWorship.UI.showToast('Database imported successfully!');
+                        location.reload(); // Reload to apply changes
+                    }
+                } catch (err) {
+                    OpenWorship.UI.showToast('Error importing database: ' + err.message);
+                }
+            };
+            reader.readAsText(input.files[0]);
         }
         
         function downloadBibleFromWeb() {
@@ -2935,7 +3841,7 @@
         .font-input-group { margin-bottom: 15px; }
         .font-input-group label { display: block; color: #888; margin-bottom: 5px; font-size: 0.9rem; }
         .font-input-group input { width: 100%; padding: 8px; background: #111; border: 1px solid #444; color: white; border-radius: 4px; }
-        #fontStatus { height: 20px; margin-bottom: 10px; font-size: 0.9rem; font-weight = bold; }
+        #fontStatus { height: 20px; margin-bottom: 10px; font-size: 0.9rem; font-weight: bold; }
         .font-list-container {
             max-height: 150px; overflow-y: auto; background: #111; border: 1px solid #444; border-radius: 4px; margin-bottom: 15px;
         }
@@ -3175,6 +4081,11 @@
                 <div onclick="exportPresentations()">Export Presentations (.presentation)...</div>
                 <div onclick="document.getElementById('presentationInput').click()">Import Presentations (.presentation)...</div>
                 <div class="separator"></div>
+                <div onclick="OpenWorship.Data.saveAllData()">Save All to IndexedDB</div>
+                <div onclick="OpenWorship.Data.exportDatabase()">Export Database Backup...</div>
+                <div onclick="document.getElementById('dbBackupInput').click()">Import Database Backup...</div>
+                <div onclick="OpenWorship.Data.clearDatabase()" style="color: #d32f2f;">Clear Database</div>
+                <div class="separator"></div>
                 <div onclick="location.reload()">Exit</div>
             </div>
         </div>
@@ -3202,9 +4113,10 @@
                 <div class="separator"></div>
                 <div onclick="document.getElementById('extensionInput').click()">Load Extension...</div>
                 <div onclick="document.getElementById('folderInput').click()">Load Folder...</div>
+                <!-- Integrated Marketplace will be added here automatically -->
             </div>
         </div>
-        <div style="margin-left:auto; color:#666; font-weight:bold;"><span id="version-display">v3.2.0</span></div>
+        <div style="margin-left:auto; color:#666; font-weight:bold;"><span id="version-display">v3.2.1</span></div>
         <button id="btnFullscreen" class="btn-toggle-fullscreen" title="Toggle Fullscreen Mode">
              &#x26F6;
         </button>
@@ -3212,7 +4124,7 @@
 
     <!-- HEADER -->
     <header>
-        <div class="brand">OpenWorship <span class="brand-badge">MODULAR v3.2.0</span></div>
+        <div class="brand">OpenWorship <span class="brand-badge">MODULAR v3.2.1</span></div>
         <div class="controls">
             <button id="btnBlack" onclick="OpenWorship.Projector.toggleBlack()">Black</button>
             <button id="btnClear" onclick="OpenWorship.Projector.toggleClear()">Clear</button>
@@ -3441,17 +4353,18 @@
 
     <!-- HIDDEN INPUTS -->
     <input type="file" id="logoInput" style="display:none" accept="image/*" onchange="handleLogoUpload(this)">
-    <input type="file" id="contentInput" accept=".json,.bible,.hymn" style="display:none" onchange="handleContentLoad(this)">
+    <input type="file" id="contentInput" accept=".json,.bible,.hymn" style="display:none" onchange="OpenWorship.Data.handleContentLoad(this)">
     <input type="file" id="scheduleInput" style="display:none" accept=".schedule,.json" onchange="handleScheduleLoad(this)">
     <input type="file" id="presentationInput" style="display:none" accept=".presentation,.json" onchange="handlePresentationLoad(this)">
     <input type="file" id="extensionInput" style="display:none" accept=".js,.owx" onchange="handleExtensionLoad(this)">
     <input type="file" id="folderInput" style="display:none" webkitdirectory mozdirectory directory multiple onchange="handleFolderLoad(this)">
+    <input type="file" id="dbBackupInput" style="display:none" accept=".owbackup,.json" onchange="importDatabase(this)">
     
     <!-- CONTEXT MENU -->
     <div id="contextMenu" class="dropdown" style="position:absolute; display:none;">
-        <div id="ctxEdit" onclick="OpenWorship.Library.rightClickedItem && OpenWorship.Editor.open(OpenWorship.Library.rightClickedItem.index, OpenWorship.Library.rightClickedItem.context)">Edit Item</div>
+        <div id="ctxEdit">Edit Item</div>
         <div id="ctxRename">Rename Item</div>
-        <div id="ctxRemove" onclick="OpenWorship.Library.removeItem()">Remove</div>
+        <div id="ctxRemove" style="color: #d32f2f;">Remove</div>
     </div>
 
     <script>
