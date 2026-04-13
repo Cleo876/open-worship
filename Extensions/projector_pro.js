@@ -1,13 +1,13 @@
 /**
  * @name Projector Pro
  * @id projector_pro
- * @version 1.2.0
+ * @version 1.3.0
  * @author OpenWorship Extensions
- * @description Enhances the projector with smart text fitting, intelligent watermarks, and persistent scripture backgrounds.
+ * @description Enhances projector with smart text fitting, intelligent watermarks, persistent scripture backgrounds, offline custom fonts, and seamless window reconnection.
  */
 
 function init(OW) {
-    console.log("Initializing Projector Pro v1.2.0...");
+    console.log("Initializing Projector Pro v1.3.0...");
 
     // ==========================================
     // 1. CSS INJECTION
@@ -37,24 +37,95 @@ function init(OW) {
     document.head.appendChild(style);
 
     // ==========================================
-    // 2. PROJECTOR GHOST TEXT (SMART WATERMARK)
+    // 2. OFFLINE FONT STORAGE (INDEXED DB)
     // ==========================================
-    if (OW.Projector && OW.Projector.openProjector) {
-        const originalOpenProjector = OW.Projector.openProjector;
-        
-        OW.Projector.openProjector = function() {
-            originalOpenProjector.call(OW.Projector);
-            
-            // We use a more robust check to wait for the document to be fully written
-            const checkTimer = setInterval(() => {
-                const win = OW.Projector.projectorWindow;
-                // Check if window exists, is not closed, and has the canvas (meaning document.write is done)
-                if (win && !win.closed && win.document && win.document.getElementById('projectorCanvas')) {
-                    clearInterval(checkTimer);
+    async function loadOfflineFonts() {
+        try {
+            if (!OW.Storage) return;
+            const record = await OW.Storage.get('global_settings', 'offline_custom_fonts');
+            if (record && record.fonts) {
+                const fonts = record.fonts;
+                for (const fontName of Object.keys(fonts)) {
+                    const dataURL = fonts[fontName];
+                    OW.Data.localFontData[fontName] = dataURL;
                     
-                    // Prevent duplicate injection
-                    if (win.document.getElementById('ppGhostText')) return;
+                    try {
+                        const fontFace = new FontFace(fontName, `url(${dataURL})`);
+                        const loadedFace = await fontFace.load();
+                        document.fonts.add(loadedFace);
+                        
+                        if (!OW.State.availableFonts.includes(fontName)) {
+                            OW.State.availableFonts.push(fontName);
+                            // Update font select lists if they are populated
+                            const selects = [document.getElementById('toolFont'), document.getElementById('scriptureFontSelect')];
+                            selects.forEach(select => {
+                                if (select && !Array.from(select.options).some(opt => opt.value === fontName)) {
+                                    const option = document.createElement('option');
+                                    option.value = fontName; option.textContent = fontName;
+                                    select.appendChild(option);
+                                }
+                            });
+                        }
+                    } catch (err) {
+                        console.warn("Projector Pro: Failed to load cached font:", fontName, err);
+                    }
+                }
+                console.log("Projector Pro: Offline fonts loaded and injected successfully.");
+            }
+        } catch (e) {
+            console.error("Projector Pro: DB Font load error", e);
+        }
+    }
 
+    async function saveFontsToDB(fonts) {
+        if (!OW.Storage) return;
+        try {
+            await OW.Storage.set('global_settings', { id: 'offline_custom_fonts', fonts: fonts });
+        } catch (e) {
+            console.error("Projector Pro: DB Font save error", e);
+        }
+    }
+
+    // Attach Proxy to automatically save local fonts whenever they are added
+    if (!OW.Data._fontProxyAttached) {
+        OW.Data.localFontData = new Proxy(OW.Data.localFontData || {}, {
+            set: function(target, property, value) {
+                target[property] = value;
+                saveFontsToDB(target);
+                return true;
+            },
+            deleteProperty: function(target, property) {
+                delete target[property];
+                saveFontsToDB(target);
+                return true;
+            }
+        });
+        OW.Data._fontProxyAttached = true;
+    }
+
+    // Load fonts immediately
+    loadOfflineFonts();
+
+
+    // ==========================================
+    // 3. PROJECTOR RECONNECT & SMART WATERMARK
+    // ==========================================
+    
+    // Extracted Ghost Text setup to manage intervals cleanly and prevent resource leaks
+    function setupGhostText(winRef) {
+        let attempts = 0;
+        if (window._ppCheckTimer) clearInterval(window._ppCheckTimer);
+        
+        window._ppCheckTimer = setInterval(() => {
+            attempts++;
+            if (attempts > 20) { clearInterval(window._ppCheckTimer); return; } // Timeout after 2s
+            
+            const win = winRef || OW.Projector.projectorWindow;
+            if (win && !win.closed && win.document && win.document.getElementById('projectorCanvas')) {
+                clearInterval(window._ppCheckTimer);
+                
+                // Inject if it doesn't exist
+                if (!win.document.getElementById('ppGhostText')) {
                     const overlay = win.document.createElement('div');
                     overlay.id = 'ppGhostText';
                     overlay.style.cssText = `
@@ -76,47 +147,105 @@ function init(OW) {
                     `;
                     
                     win.document.body.appendChild(overlay);
-                    
-                    // Smart Visibility Logic
-                    const updateVisibility = () => {
-                        if (!win || win.closed) return;
-
-                        const isFS = win.document.fullscreenElement || 
-                                     win.document.webkitFullscreenElement || 
-                                     win.document.mozFullScreenElement;
-                                     
-                        // Check if anything is actually being presented
-                        // We consider it "presenting" if there is a slide AND the projector isn't cleared/blacked
-                        // If user clicked 'Clear' or 'Black', technically we are presenting 'nothing', so show ghost text?
-                        // User requirement: "anything... being presented... ghost text needs to disappear"
-                        
-                        const liveState = OW.State.liveState;
-                        const hasSlide = liveState && liveState.slide !== null;
-                        
-                        // Check projector flags for Black/Clear/Logo
-                        const isBlanked = OW.Projector.isBlack || OW.Projector.isClear || OW.Projector.isLogo;
-                        
-                        // If we have a slide and we aren't blanked, we are presenting content.
-                        const isPresentingContent = hasSlide && !isBlanked;
-
-                        // HIDE if Fullscreen OR Presenting Content
-                        overlay.style.opacity = (isFS || isPresentingContent) ? "0" : "1";
-                    };
-                    
-                    win.document.addEventListener('fullscreenchange', updateVisibility);
-                    win.document.addEventListener('resize', updateVisibility);
-                    
-                    // Poll state changes (since we don't have events for every state change)
-                    setInterval(updateVisibility, 250); 
-                    
-                    updateVisibility();
                 }
-            }, 100); // Check every 100ms
+
+                const overlay = win.document.getElementById('ppGhostText');
+                
+                const updateVisibility = () => {
+                    if (!win || win.closed) {
+                        if (window._ppGhostInterval) clearInterval(window._ppGhostInterval);
+                        return;
+                    }
+                    
+                    const isFS = win.document.fullscreenElement || 
+                                 win.document.webkitFullscreenElement || 
+                                 win.document.mozFullScreenElement;
+                                 
+                    const liveState = OW.State.liveState;
+                    const hasSlide = liveState && liveState.slide !== null;
+                    const isBlanked = OW.Projector.isBlack || OW.Projector.isClear || OW.Projector.isLogo;
+                    const isPresentingContent = hasSlide && !isBlanked;
+
+                    // HIDE if Fullscreen OR Presenting Content
+                    overlay.style.opacity = (isFS || isPresentingContent) ? "0" : "1";
+                };
+                
+                win.document.addEventListener('fullscreenchange', updateVisibility);
+                win.document.addEventListener('resize', updateVisibility);
+                
+                // Clear any old interval to fix the resource leak
+                if (window._ppGhostInterval) clearInterval(window._ppGhostInterval);
+                window._ppGhostInterval = setInterval(updateVisibility, 250); 
+                
+                updateVisibility();
+            }
+        }, 100);
+    }
+
+    if (OW.Projector && OW.Projector.openProjector) {
+        const originalOpenProjector = OW.Projector.openProjector;
+        
+        OW.Projector.openProjector = function() {
+            let reconnected = false;
+            
+            try {
+                // Try to reconnect to an existing projector window by hitting the exact same window name
+                const existingWin = window.open("", "Projector", "width=800,height=600");
+                
+                if (existingWin && existingWin.document && existingWin.document.getElementById('projectorCanvas')) {
+                    console.log("Projector Pro: Reconnecting to existing Projector window seamlessly.");
+                    this.projectorWindow = existingWin;
+                    reconnected = true;
+                    
+                    const status = document.getElementById('projStatus');
+                    if (status) {
+                        status.innerText = "LIVE (Reconnected)";
+                        status.style.color = "#4caf50";
+                    }
+                    
+                    // Safely re-establish the connection monitor without leaking
+                    if (this._projMonitorInterval) clearInterval(this._projMonitorInterval);
+                    this._projMonitorInterval = setInterval(() => {
+                        if (this.projectorWindow && this.projectorWindow.closed) {
+                            clearInterval(this._projMonitorInterval);
+                            if (status) {
+                                status.innerText = "OFFLINE";
+                                status.style.color = "#d32f2f";
+                            }
+                        }
+                    }, 1000);
+
+                    // Re-sync fonts into the existing window to prevent fallback errors
+                    try {
+                        if (typeof existingWin.synchronizeFonts === 'function') {
+                            existingWin.synchronizeFonts();
+                        } else {
+                            for (const fontName in OW.Data.localFontData) {
+                                const fontFace = new existingWin.FontFace(fontName, `url(${OW.Data.localFontData[fontName]})`);
+                                existingWin.document.fonts.add(fontFace);
+                            }
+                        }
+                    } catch(e) { console.warn("Projector Pro: Font re-sync warning:", e); }
+                    
+                    // Force broadcast update
+                    setTimeout(() => { this.reRenderLive(); }, 300);
+                }
+            } catch (e) {
+                console.error("Projector Pro: Reconnection check failed", e);
+            }
+            
+            // If we couldn't reconnect (or it was empty), run the original setup
+            if (!reconnected) {
+                originalOpenProjector.call(this);
+            }
+            
+            // Apply the smart watermark
+            setupGhostText(this.projectorWindow);
         };
     }
 
     // ==========================================
-    // 3. SMART TEXT FITTING ENGINE
+    // 4. SMART TEXT FITTING ENGINE
     // ==========================================
     function calculateFittingFontSize(ctx, text, fontFace, bold, italic, maxWidth, maxHeight, startSize) {
         let size = startSize;
@@ -219,7 +348,7 @@ function init(OW) {
     }
 
     // ==========================================
-    // 4. PREVIEW WINDOW FIX (Override Settings Preview)
+    // 5. PREVIEW WINDOW FIX (Override Settings Preview)
     // ==========================================
     if (OW.ScriptureSettings && OW.ScriptureSettings.updatePreview) {
         OW.ScriptureSettings.updatePreview = function() {
@@ -278,7 +407,7 @@ function init(OW) {
     }
 
     // ==========================================
-    // 5. SCRIPTURE SETTINGS UI (BG & FORMATTING)
+    // 6. SCRIPTURE SETTINGS UI (BG & FORMATTING)
     // ==========================================
     if (OW.ScriptureSettings && OW.ScriptureSettings.open) {
         const originalScriptureOpen = OW.ScriptureSettings.open;
@@ -390,5 +519,5 @@ function init(OW) {
         if (OW.Extensions.updateExtensionsMenu) OW.Extensions.updateExtensionsMenu();
     }
     
-    OW.UI.showToast("Projector Pro v1.2 Loaded");
+    OW.UI.showToast("Projector Pro v1.3 Loaded");
 }
