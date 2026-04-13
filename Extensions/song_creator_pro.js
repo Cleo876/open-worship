@@ -1,16 +1,16 @@
 /**
- * @name Song Creator Pro
- * @id song_creator_pro
- * @version 1.1.0
+ * @name Song Creator Pro + UI Fixes
+ * @id song_creator_complete
+ * @version 1.3.0
  * @author OpenWorship Extensions
- * @description Advanced song creation with batch lyrics, smart splitting, and visual preview management.
+ * @description Adds Song Creator, plus fixes missing Bold/Italic buttons and Projector instructions. Fixed severe resource leaks.
  */
 
 function init(OW) {
-    console.log("Initializing Song Creator Pro v1.1.0...");
+    console.log("Initializing Song Creator Pro + UI Fixes v1.3.0...");
 
     // ==========================================
-    // 1. CSS INJECTION
+    // 1. CSS INJECTION (Song Creator + Fixes)
     // ==========================================
     const style = document.createElement('style');
     style.textContent = `
@@ -18,12 +18,12 @@ function init(OW) {
         .song-fab {
             position: absolute; 
             bottom: 20px; 
-            right: 420px; /* FIXED: Aligned with Presentation Add Button */
+            right: 420px; 
             width: 40px; 
             height: 40px; 
             border-radius: 50%; 
             border: none;
-            background: #9c27b0; /* Distinct Purple Color */
+            background: #9c27b0; 
             color: white; 
             font-size: 24px; 
             font-weight: bold;
@@ -81,7 +81,6 @@ function init(OW) {
             overflow: hidden;
         }
 
-        /* Left Panel: Inputs */
         .sc-panel-left {
             width: 35%;
             padding: 20px;
@@ -93,7 +92,6 @@ function init(OW) {
             overflow-y: auto;
         }
 
-        /* Right Panel: Preview Grid */
         .sc-panel-right {
             flex: 1;
             padding: 20px;
@@ -106,7 +104,6 @@ function init(OW) {
             align-content: start;
         }
 
-        /* Controls styling - CENTER ALIGNED */
         .sc-control-group {
             display: flex;
             flex-direction: column;
@@ -128,11 +125,11 @@ function init(OW) {
             padding: 10px;
             border-radius: 4px;
             font-family: inherit;
-            text-align: center; /* Center text input */
+            text-align: center; 
         }
         
         textarea.sc-input {
-            text-align: left; /* Exception for large text block */
+            text-align: left;
             resize: none;
             height: 200px;
         }
@@ -169,7 +166,6 @@ function init(OW) {
         .sc-btn-success { background: #4caf50; }
         .sc-btn-success:hover { background: #43a047; }
 
-        /* Preview Cards */
         .sc-card {
             background: #222;
             border: 1px solid #444;
@@ -211,27 +207,54 @@ function init(OW) {
             font-size: 0.7rem;
         }
 
-        /* Mini Editor Overlay (inside left panel) */
         .sc-mini-editor {
             display: none;
             flex-direction: column;
             gap: 15px;
             animation: fadeIn 0.3s;
         }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* Status Indicator */
+        
         .sc-status {
             font-size: 0.8rem;
             color: #888;
             margin-top: 5px;
             height: 1.2em;
         }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* --- UI FIX STYLES --- */
+        .ext-bold-btn {
+            font-weight: bold;
+            width: 30px;
+            background: #333;
+            border: 1px solid #555;
+            color: #eee;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .ext-bold-btn.active {
+            background: #007acc;
+            border-color: #005f9e;
+        }
+        .ext-italic-btn {
+            font-style: italic;
+            width: 30px;
+            background: #333;
+            border: 1px solid #555;
+            color: #eee;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .ext-italic-btn.active {
+            background: #007acc;
+            border-color: #005f9e;
+        }
     `;
     document.head.appendChild(style);
 
     // ==========================================
-    // 2. UI CREATION (FAB & MODAL)
+    // 2. SONG CREATOR UI (FAB & MODAL)
     // ==========================================
 
     // 2a. Create FAB
@@ -249,15 +272,17 @@ function init(OW) {
     }
 
     // 2b. Monkey Patch Tab Switcher to toggle FAB visibility
-    const originalSwitchTab = OW.Library.switchTab;
-    OW.Library.switchTab = function(tab) {
-        originalSwitchTab.call(OW.Library, tab);
-        if (tab === 'Song') {
-            fab.style.display = 'flex';
-        } else {
-            fab.style.display = 'none';
-        }
-    };
+    if (OW.Library && OW.Library.switchTab) {
+        const originalSwitchTab = OW.Library.switchTab;
+        OW.Library.switchTab = function(tab) {
+            originalSwitchTab.call(OW.Library, tab);
+            if (tab === 'Song') {
+                fab.style.display = 'flex';
+            } else {
+                fab.style.display = 'none';
+            }
+        };
+    }
 
     if (OW.State.currentTab === 'Song') fab.style.display = 'flex';
 
@@ -346,18 +371,12 @@ function init(OW) {
     document.body.appendChild(modal);
 
     // ==========================================
-    // 3. LOGIC & STATE
+    // 3. SONG CREATOR LOGIC
     // ==========================================
-    let songState = {
-        slides: [],
-        globalBg: null
-    };
+    let songState = { slides: [], globalBg: null };
     let currentEditIndex = -1;
     let autoGenTimer = null;
 
-    // --- EVENT LISTENERS ---
-
-    // Open/Close
     fab.onclick = () => {
         document.getElementById('scTitle').value = "";
         document.getElementById('scLyrics').value = "";
@@ -370,15 +389,13 @@ function init(OW) {
 
     document.getElementById('scCloseBtn').onclick = () => modal.style.display = 'none';
 
-    // 3a. Auto-Generation Logic (Lyrics Input)
+    // Auto-Generation
     const lyricsInput = document.getElementById('scLyrics');
     const statusDiv = document.getElementById('scAutoStatus');
 
     lyricsInput.addEventListener('input', () => {
         statusDiv.innerText = "Typing...";
         clearTimeout(autoGenTimer);
-        
-        // Debounce 1 second
         autoGenTimer = setTimeout(() => {
             statusDiv.innerText = "Generating...";
             generateSlides();
@@ -386,85 +403,52 @@ function init(OW) {
         }, 1000);
     });
 
-    // 3b. Slider Logic (Immediate Update)
     const slider = document.getElementById('scLinesSlider');
     const sliderLabel = document.getElementById('scSliderLabel');
     slider.oninput = () => {
         sliderLabel.textContent = `Lines per Slide: ${slider.value}`;
-        // Generate immediately for slider interaction
-        if (lyricsInput.value.trim()) {
-            generateSlides(); 
-        }
+        if (lyricsInput.value.trim()) generateSlides(); 
     };
 
-    // 3c. Core Generation Function
     function generateSlides() {
         const text = lyricsInput.value;
         const linesPerSlide = parseInt(slider.value);
-        
         if (!text.trim()) return;
-
         const lines = text.split('\n').filter(l => l.trim() !== '');
         songState.slides = [];
-
         for (let i = 0; i < lines.length; i += linesPerSlide) {
             const chunk = lines.slice(i, i + linesPerSlide).join('\n');
             songState.slides.push({
-                layers: [{ 
-                    text: chunk, 
-                    style: { fontSize: 80, color: '#ffffff', font: 'Segoe UI' } 
-                }],
-                bgImage: songState.globalBg // Apply global if exists
+                layers: [{ text: chunk, style: { fontSize: 80, color: '#ffffff', font: 'Segoe UI' } }],
+                bgImage: songState.globalBg
             });
         }
-
         renderGrid();
     }
 
-    // Force Gen Button (just in case)
-    document.getElementById('scForceGenBtn').onclick = () => {
-        generateSlides();
-        OW.UI.showToast("Slides Regenerated");
-    };
+    document.getElementById('scForceGenBtn').onclick = () => { generateSlides(); OW.UI.showToast("Slides Regenerated"); };
 
-    // 3d. Global BG (Immediate Update)
     document.getElementById('scGlobalBgBtn').onclick = () => document.getElementById('scGlobalBgInput').click();
     document.getElementById('scGlobalBgInput').onchange = (e) => {
         if(e.target.files[0]) {
             const reader = new FileReader();
             reader.onload = (evt) => {
                 songState.globalBg = evt.target.result;
-                
-                // If lyrics exist, regenerate fully to ensure clean slate
-                if (document.getElementById('scLyrics').value.trim()) {
-                    generateSlides();
-                } else {
-                    // Just update state if no slides yet
-                }
+                if (document.getElementById('scLyrics').value.trim()) generateSlides();
                 OW.UI.showToast("Global background updated");
             };
             reader.readAsDataURL(e.target.files[0]);
         }
     };
 
-    // Navigation
     document.getElementById('scBackBtn').onclick = showMainInput;
 
-    // Mini Editor Logic
     document.getElementById('scEditText').oninput = (e) => {
-        if(currentEditIndex > -1) {
-            songState.slides[currentEditIndex].layers[0].text = e.target.value;
-            updateCard(currentEditIndex);
-        }
+        if(currentEditIndex > -1) { songState.slides[currentEditIndex].layers[0].text = e.target.value; updateCard(currentEditIndex); }
     };
-
     document.getElementById('scEditSize').oninput = (e) => {
-        if(currentEditIndex > -1) {
-            songState.slides[currentEditIndex].layers[0].style.fontSize = parseInt(e.target.value);
-            updateCard(currentEditIndex);
-        }
+        if(currentEditIndex > -1) { songState.slides[currentEditIndex].layers[0].style.fontSize = parseInt(e.target.value); updateCard(currentEditIndex); }
     };
-
     document.getElementById('scEditBgBtn').onclick = () => document.getElementById('scEditBgInput').click();
     document.getElementById('scEditBgInput').onchange = (e) => {
         if(e.target.files[0] && currentEditIndex > -1) {
@@ -472,129 +456,210 @@ function init(OW) {
             reader.onload = (evt) => {
                 songState.slides[currentEditIndex].bgImage = evt.target.result;
                 updateCard(currentEditIndex);
-                OW.UI.showToast("Slide background updated");
             };
             reader.readAsDataURL(e.target.files[0]);
         }
     };
-    
     document.getElementById('scClearBgBtn').onclick = () => {
-        if (currentEditIndex > -1) {
-            delete songState.slides[currentEditIndex].bgImage;
-            updateCard(currentEditIndex);
-        }
+        if (currentEditIndex > -1) { delete songState.slides[currentEditIndex].bgImage; updateCard(currentEditIndex); }
     };
 
-    // SAVE LOGIC
     document.getElementById('scSaveBtn').onclick = async () => {
         const title = document.getElementById('scTitle').value.trim() || "Untitled Song";
-        if (songState.slides.length === 0) {
-            OW.UI.showToast("Generate some slides first!");
-            return;
-        }
-
+        if (songState.slides.length === 0) { OW.UI.showToast("Generate some slides first!"); return; }
         const newSong = {
-            id: Date.now(),
-            title: title,
-            type: "Song",
-            slides: JSON.parse(JSON.stringify(songState.slides)), // Deep copy
-            created: Date.now(),
-            modified: Date.now()
+            id: Date.now(), title: title, type: "Song",
+            slides: JSON.parse(JSON.stringify(songState.slides)),
+            created: Date.now(), modified: Date.now()
         };
-
-        // Add to Library State
         OW.State.library.push(newSong);
-        
-        // Save to IndexedDB
-        if (OW.Data.saveLibraryItemToStorage) {
-            await OW.Data.saveLibraryItemToStorage(newSong);
-        }
-
-        // Refresh UI
-        if (OW.State.currentTab === 'Song') {
-            OW.Library.render();
-        }
-
+        if (OW.Data.saveLibraryItemToStorage) await OW.Data.saveLibraryItemToStorage(newSong);
+        if (OW.State.currentTab === 'Song') OW.Library.render();
         modal.style.display = 'none';
-        OW.UI.showToast(`Song "${title}" saved to library!`);
+        OW.UI.showToast(`Song "${title}" saved!`);
     };
-
-    // ==========================================
-    // 4. HELPER FUNCTIONS
-    // ==========================================
 
     function showMainInput() {
         document.getElementById('scMainInputView').style.display = 'flex';
         document.getElementById('scMiniEditorView').style.display = 'none';
-        
         document.querySelectorAll('.sc-card').forEach(c => c.style.borderColor = '#444');
         currentEditIndex = -1;
     }
-
     function showMiniEditor(index) {
         currentEditIndex = index;
         const slide = songState.slides[index];
-
         document.getElementById('scMainInputView').style.display = 'none';
         document.getElementById('scMiniEditorView').style.display = 'flex';
-        
         document.getElementById('scEditNum').innerText = index + 1;
         document.getElementById('scEditText').value = slide.layers[0].text;
         document.getElementById('scEditSize').value = slide.layers[0].style.fontSize || 80;
-        
-        document.querySelectorAll('.sc-card').forEach((c, i) => {
-            c.style.borderColor = (i === index) ? '#9c27b0' : '#444';
-        });
+        document.querySelectorAll('.sc-card').forEach((c, i) => { c.style.borderColor = (i === index) ? '#9c27b0' : '#444'; });
     }
-
+    
+    // FIX: Memory leak in grid generation
     function renderGrid() {
         const grid = document.getElementById('scPreviewGrid');
         grid.innerHTML = '';
-
-        if (songState.slides.length === 0) {
-             grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#555; margin-top:50px;">Paste lyrics to start...</div>';
-             return;
+        if (songState.slides.length === 0) { 
+            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#555; margin-top:50px;">Paste lyrics to start...</div>'; 
+            return; 
         }
-
+        
         songState.slides.forEach((slide, index) => {
-            const card = document.createElement('div');
-            card.className = 'sc-card';
+            const card = document.createElement('div'); 
+            card.className = 'sc-card'; 
             card.id = `sc-card-${index}`;
             
-            // Thumb
-            const thumb = document.createElement('div');
+            const thumb = document.createElement('div'); 
             thumb.className = 'sc-card-thumb';
-            const canvas = document.createElement('canvas');
-            canvas.width = 1920; 
-            canvas.height = 1080;
+            
+            const canvas = document.createElement('canvas'); 
+            // Dramatically reduce canvas memory footprint (saves ~94% memory)
+            canvas.width = 480; 
+            canvas.height = 270;
             thumb.appendChild(canvas);
             
-            // Render content to canvas
-            const ctx = canvas.getContext('2d');
+            const ctx = canvas.getContext('2d'); 
+            // Scale drawing operations to fit the smaller canvas
+            ctx.scale(0.25, 0.25);
             OW.Projector.renderSlide(ctx, slide);
-
-            // Info
-            const body = document.createElement('div');
+            
+            const body = document.createElement('div'); 
             body.className = 'sc-card-body';
             body.innerHTML = `<span class="sc-badge">Slide ${index + 1}</span>`;
-
-            card.appendChild(thumb);
+            
+            card.appendChild(thumb); 
             card.appendChild(body);
-
             card.onclick = () => showMiniEditor(index);
-
             grid.appendChild(card);
         });
     }
-
+    
     function updateCard(index) {
         const card = document.getElementById(`sc-card-${index}`);
         if (!card) return;
-        
         const canvas = card.querySelector('canvas');
         const ctx = canvas.getContext('2d');
+        
+        // Clear the canvas efficiently
+        ctx.setTransform(1, 0, 0, 1, 0, 0); 
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Reapply scaling
+        ctx.scale(0.25, 0.25);
         OW.Projector.renderSlide(ctx, songState.slides[index]);
     }
 
-    console.log("Song Creator Pro v1.1.0 loaded successfully.");
+    // ==========================================
+    // 4. UI FIXES INJECTION
+    // ==========================================
+
+    // FIX 1: Projector Instructions
+    // Monkey patch the openProjector function
+    if (OW.Projector && OW.Projector.openProjector) {
+        const originalOpenProjector = OW.Projector.openProjector;
+        OW.Projector.openProjector = function() {
+            originalOpenProjector.call(OW.Projector);
+            
+            let attempts = 0;
+            // Wait for window to open
+            const checkTimer = setInterval(() => {
+                attempts++;
+                if (attempts > 20) { // Stop checking after 10 seconds to prevent endless polling leak
+                    clearInterval(checkTimer);
+                    return;
+                }
+                if (OW.Projector.projectorWindow && !OW.Projector.projectorWindow.closed && OW.Projector.projectorWindow.document.body) {
+                    clearInterval(checkTimer);
+                    
+                    const win = OW.Projector.projectorWindow;
+                    if (!win.document.getElementById('projInstructions')) {
+                        const instructions = win.document.createElement('div');
+                        instructions.id = 'projInstructions';
+                        instructions.style.cssText = `
+                            position: absolute; 
+                            bottom: 20px; 
+                            width: 100%; 
+                            text-align: center; 
+                            color: rgba(255,255,255,0.3); 
+                            font-family: sans-serif; 
+                            font-size: 14px; 
+                            pointer-events: none;
+                            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+                        `;
+                        instructions.innerText = "Double-click to Toggle Fullscreen";
+                        win.document.body.appendChild(instructions);
+                    }
+                }
+            }, 500);
+        };
+    }
+
+    // FIX 2: Scripture Bold/Italic Buttons
+    // Monkey patch ScriptureSettings.open
+    if (OW.ScriptureSettings && OW.ScriptureSettings.open) {
+        const originalScriptureOpen = OW.ScriptureSettings.open;
+        OW.ScriptureSettings.open = function() {
+            originalScriptureOpen.call(OW.ScriptureSettings);
+            
+            // Inject buttons if they don't exist
+            const fontSelect = document.getElementById('scriptureFontSelect');
+            if (fontSelect && !document.getElementById('extBoldBtn')) {
+                const container = fontSelect.parentNode; // .control-row
+                
+                // Bold Button
+                const boldBtn = document.createElement('button');
+                boldBtn.id = 'extBoldBtn';
+                boldBtn.className = 'ext-bold-btn';
+                boldBtn.innerText = 'B';
+                boldBtn.onclick = () => {
+                    OW.State.scriptureSettings.bold = !OW.State.scriptureSettings.bold;
+                    updateButtonStates();
+                    OW.ScriptureSettings.updatePreview();
+                };
+                
+                // Italic Button
+                const italicBtn = document.createElement('button');
+                italicBtn.id = 'extItalicBtn';
+                italicBtn.className = 'ext-italic-btn';
+                italicBtn.innerText = 'I';
+                italicBtn.onclick = () => {
+                    OW.State.scriptureSettings.italic = !OW.State.scriptureSettings.italic;
+                    updateButtonStates();
+                    OW.ScriptureSettings.updatePreview();
+                };
+                
+                container.appendChild(boldBtn);
+                container.appendChild(italicBtn);
+            }
+            
+            updateButtonStates();
+        };
+    }
+
+    function updateButtonStates() {
+        const boldBtn = document.getElementById('extBoldBtn');
+        const italicBtn = document.getElementById('extItalicBtn');
+        if (boldBtn) {
+            boldBtn.classList.toggle('active', OW.State.scriptureSettings.bold);
+        }
+        if (italicBtn) {
+            italicBtn.classList.toggle('active', OW.State.scriptureSettings.italic);
+        }
+    }
+
+    // FIX 3: Extension List Refresh
+    // Force the menu to update immediately to show this extension
+    if (OW.Extensions.addExtensionMenuItem) {
+        OW.Extensions.addExtensionMenuItem(" Song Creator Pro (Active)", () => {
+            OW.UI.showToast("Song Creator is active in Songs tab");
+        });
+        // Try to force update if method exists
+        if (OW.Extensions.updateExtensionsMenu) {
+            OW.Extensions.updateExtensionsMenu();
+        }
+    }
+
+    console.log("Song Creator Complete loaded with UI fixes.");
+    OW.UI.showToast("Song Creator & Fixes Loaded!");
 }
